@@ -12,7 +12,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.MessageContent, // ✅ เปิดใช้งานสิทธิ์อ่านข้อความ
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildModeration
     ],
@@ -28,14 +28,13 @@ const player = new Player(client);
 })();
 client.player = player; 
 
-// 🔄 แก้ไขระบบโหลดคำสั่ง: ให้สามารถอ่านโฟลเดอร์ย่อยใน commands ได้ทั้งหมด
+// 🔄 ระบบโหลดคำสั่ง (รองรับทั้งโฟลเดอร์ย่อย)
 const foldersPath = path.join(__dirname, 'commands');
 if (fs.existsSync(foldersPath)) {
     const commandFolders = fs.readdirSync(foldersPath);
     for (const folder of commandFolders) {
         const commandsPath = path.join(foldersPath, folder);
         
-        // เช็กว่าเป็นโฟลเดอร์ใช่ไหมก่อนจะอ่านไฟล์ข้างใน
         if (fs.lstatSync(commandsPath).isDirectory()) {
             const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
             for (const file of commandFiles) {
@@ -77,6 +76,36 @@ if (fs.existsSync(eventsPath)) {
     }
 }
 
+// ✅ เพิ่มระบบดักจับข้อความคำสั่งขึ้นต้นด้วยเครื่องหมายตกใจ (!) เช่น !getrole
+client.on('messageCreate', async (message) => {
+    if (!message.guild || message.author.bot) return;
+    
+    const prefix = '!';
+    if (!message.content.startsWith(prefix)) return;
+
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
+    const commandName = args.shift().toLowerCase();
+
+    const foldersPath = path.join(__dirname, 'commands');
+    const commandFolders = fs.readdirSync(foldersPath);
+    for (const folder of commandFolders) {
+        const commandsPath = path.join(foldersPath, folder);
+        if (fs.lstatSync(commandsPath).isDirectory()) {
+            const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+            for (const file of commandFiles) {
+                try {
+                    const cmd = require(path.join(commandsPath, file));
+                    if (cmd.name === commandName && typeof cmd.execute === 'function') {
+                        await cmd.execute(message, args);
+                    }
+                } catch (error) {
+                    console.error(`❌ Error executing command ${file}:`, error);
+                }
+            }
+        }
+    }
+});
+
 client.once('ready', () => {
     console.log(`✅ บอทออนไลน์: ${client.user.tag}`);
     console.log(`🎵 ระบบเสียงเริ่มต้นเรียบร้อย`);
@@ -85,7 +114,7 @@ client.once('ready', () => {
 client.on('error', e => console.error('❌ Error:', e.message));
 process.on('unhandledRejection', e => console.error('❌ Unhandled:', e.message));
 
-// 🔑 ปรับปรุงให้รองรับทั้ง BOT_TOKEN และ DISCORD_TOKEN ป้องกันปัญหาลืมตั้งค่าตัวแปร
+// 🔑 ตรวจสอบ Token
 const token = process.env.BOT_TOKEN || process.env.DISCORD_TOKEN;
 if (!token) {
     console.error('❌ ไม่พบ Token ของบอท กรุณาตั้งค่า BOT_TOKEN หรือ DISCORD_TOKEN ใน Environment Variables');
