@@ -8,7 +8,7 @@ module.exports = {
         if (!message.content.startsWith(`${prefix}getrole`)) return;
 
         // ไอดีของยศ Member ที่ต้องการแจก
-        const ROLE_ID = '1486030638464237631';
+        const ROLE_ID = '1356148472851726437';
         const role = message.guild.roles.cache.get(ROLE_ID);
 
         if (!role) {
