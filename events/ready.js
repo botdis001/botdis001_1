@@ -4,47 +4,46 @@ module.exports = {
     name: 'ready',
     once: true,
     async execute(client) {
-        console.log('=====================================');
         console.log(`🚀 บอทออนไลน์: ${client.user.tag}`);
-        console.log('=====================================');
 
-        // ID ห้องสำหรับส่งปุ่มรับยศ
         const ROLE_CHANNEL_ID = '1486030638464237631'; 
-        const ROLE_ID = '1356148472851726437'; // ID ยศ Regular
 
         try {
-            const channel = client.channels.cache.get(ROLE_CHANNEL_ID) || await client.channels.fetch(ROLE_CHANNEL_ID);
+            const channel = await client.channels.fetch(ROLE_CHANNEL_ID);
             
             if (channel) {
-                // 1. ลบข้อความเก่าในห้องนั้นทิ้งให้หมดเพื่อป้องกันปุ่มค้าง
-                const messages = await channel.messages.fetch({ limit: 10 });
-                await channel.bulkDelete(messages).catch(() => {});
+                // ดึงข้อความมาลบทั้งหมดในห้องนี้
+                const fetchedMessages = await channel.messages.fetch({ limit: 20 });
+                if (fetchedMessages.size > 0) {
+                    await channel.bulkDelete(fetchedMessages).catch(async () => {
+                        // ถ้า bulk ไม่ได้ ให้ลบทีละข้อความ
+                        for (const msg of fetchedMessages.values()) {
+                            await msg.delete().catch(() => {});
+                        }
+                    });
+                }
 
-                // 2. สร้าง Embed พร้อมโลโก้เซิร์ฟเวอร์
+                // สร้าง Embed และปุ่มใหม่ (Custom ID ใหม่)
                 const embed = new EmbedBuilder()
                     .setTitle('ยินดีต้อนรับสู่ ' + channel.guild.name)
-                    .setDescription('กดปุ่มด้านล่างเพื่อรับยศ **friend** และเข้าสู่เซิร์ฟเวอร์ครับ')
+                    .setDescription('กดปุ่มด้านล่างเพื่อกรอกชื่อและรับยศ **friend** ครับ')
                     .setColor('#0099ff')
                     .setThumbnail(channel.guild.iconURL())
-                    .setFooter({ text: 'ระบบจัดการยศอัตโนมัติ' });
+                    .setFooter({ text: 'ระบบจัดการยศและเปลี่ยนชื่ออัตโนมัติ' });
 
-                // 3. สร้างปุ่ม
                 const button = new ActionRowBuilder()
                     .addComponents(
                         new ButtonBuilder()
-                            .setCustomId(`role_toggle_${ROLE_ID}`)
-                            .setLabel('กดรับยศ!')
+                            .setCustomId('modal_role_trigger') // ตัวนี้คือตัวเรียกฟอร์ม
+                            .setLabel('กรอกชื่อและรับยศ!')
                             .setStyle(ButtonStyle.Primary),
                     );
 
-                // 4. ส่งปุ่มใหม่เข้าไปในห้อง
                 await channel.send({ embeds: [embed], components: [button] });
-                console.log('✅ สร้างปุ่มรับยศเรียบร้อยแล้ว');
-            } else {
-                console.log('❌ ไม่พบห้องสำหรับสร้างปุ่มรับยศ');
+                console.log('✅ ลบข้อความเก่าและสร้างปุ่มใหม่ (Modal) สำเร็จ!');
             }
         } catch (err) {
-            console.error('❌ เกิดข้อผิดพลาดในการสร้างปุ่ม:', err.message);
+            console.error('❌ เกิดข้อผิดพลาดตอนสร้างปุ่ม:', err.message);
         }
     }
 };
