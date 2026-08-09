@@ -3,16 +3,12 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// ✅ นำเข้า Player และ DefaultExtractors เวอร์ชันล่าสุด
-const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMembers, // สำคัญมากสำหรับระบบต้อนรับและยศ
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent, // ✅ เปิดใช้งานสิทธิ์อ่านข้อความ
+        GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildModeration
     ],
@@ -20,13 +16,6 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-
-// ✅ เริ่มต้น Player และแก้บั๊ก Error โหลดเพลงแบบใหม่
-const player = new Player(client);
-(async () => {
-    await player.extractors.loadMulti(DefaultExtractors);
-})();
-client.player = player; 
 
 // 🔄 ระบบโหลดคำสั่ง (รองรับทั้งโฟลเดอร์ย่อย)
 const foldersPath = path.join(__dirname, 'commands');
@@ -51,7 +40,7 @@ if (fs.existsSync(foldersPath)) {
     }
 }
 
-// โหลดเหตุการณ์ (Events)
+// 🔄 โหลดเหตุการณ์ (Events) อัตโนมัติจากโฟลเดอร์ events
 const eventsPath = path.join(__dirname, 'events');
 if (fs.existsSync(eventsPath)) {
     const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
@@ -61,22 +50,18 @@ if (fs.existsSync(eventsPath)) {
             if (!event.name || typeof event.execute !== 'function') continue;
 
             if (event.once) {
-                if (event.name === 'clientReady' || event.name === 'ready') {
-                    client.once('ready', async () => {
-                        console.log(`🔄 เรียกใช้เหตุการณ์: ${event.name}`);
-                        await event.execute(client);
-                    });
-                } else {
-                    client.once(event.name, (...args) => event.execute(...args));
-                }
+                client.once(event.name, (...args) => event.execute(...args));
             } else {
                 client.on(event.name, (...args) => event.execute(...args));
             }
-        } catch (e) { console.error(`❌ โหลดเหตุการณ์ไม่ได้: ${file}`, e.message); }
+            console.log(`📂 โหลด Event สำเร็จ: ${file}`);
+        } catch (e) { 
+            console.error(`❌ โหลดเหตุการณ์ไม่ได้: ${file}`, e.message); 
+        }
     }
 }
 
-// ✅ เพิ่มระบบดักจับข้อความคำสั่งขึ้นต้นด้วยเครื่องหมายตกใจ (!) เช่น !getrole
+// ✅ ระบบดักจับข้อความคำสั่งขึ้นต้นด้วยเครื่องหมายตกใจ (!) เช่น !updatebutton
 client.on('messageCreate', async (message) => {
     if (!message.guild || message.author.bot) return;
     
@@ -104,11 +89,6 @@ client.on('messageCreate', async (message) => {
             }
         }
     }
-});
-
-client.once('ready', () => {
-    console.log(`✅ บอทออนไลน์: ${client.user.tag}`);
-    console.log(`🎵 ระบบเสียงเริ่มต้นเรียบร้อย`);
 });
 
 client.on('error', e => console.error('❌ Error:', e.message));
