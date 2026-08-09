@@ -3,14 +3,12 @@ const { EmbedBuilder } = require('discord.js');
 module.exports = {
     name: 'guildMemberAdd',
     async execute(member) {
-        // ID ห้องที่คุณระบุไว้
         const WELCOME_CHANNEL_ID = '1205000338382524416'; 
 
         try {
             const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID).catch(() => null);
             if (!channel) return;
 
-            // สร้าง Embed ต้อนรับสมาชิกใหม่
             const welcomeEmbed = new EmbedBuilder()
                 .setColor('#00ffcc')
                 .setTitle('🎉 ยินดีต้อนรับสมาชิกใหม่เข้าสู่เซิร์ฟเวอร์!')
@@ -23,7 +21,6 @@ module.exports = {
                 .setFooter({ text: 'ระบบต้อนรับอัตโนมัติ', iconURL: member.guild.iconURL() })
                 .setTimestamp();
 
-            // ส่งข้อความเข้าห้องต้อนรับ
             await channel.send({ 
                 content: `👋 ยินดีต้อนรับ ${member} เข้าสู่เซิร์ฟเวอร์ครับ!`, 
                 embeds: [welcomeEmbed] 
