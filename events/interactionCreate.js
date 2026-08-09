@@ -1,76 +1,81 @@
+const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction) {
-        // เช็กว่าเป็นปุ่มกดหรือไม่
-        if (!interaction.isButton()) return;
-        
-        // เช็กว่าเป็นปุ่มรับยศที่เราต้องการไหม
-        if (!interaction.customId.startsWith('role_toggle_')) return;
-
-        const roleId = interaction.customId.split('_')[2];
-        const member = interaction.member;
-        const role = interaction.guild.roles.cache.get(roleId);
-
-        // ID ห้องสำหรับส่ง Log
         const LOG_CHANNEL_ID = '1494379391327928370';
+        const ROLE_ID = '1356148472851726437'; // ID ยศ friend
 
-        // ฟังก์ชันดึงเวลาปัจจุบันรูปแบบไทย
         const getTime = () => new Date().toLocaleString('th-TH', {
             timeZone: 'Asia/Bangkok',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
 
-        if (!role) {
-            return interaction.reply({ 
-                content: '❌ ไม่พบยศนี้ในระบบเซิร์ฟเวอร์', 
-                ephemeral: true 
-            });
+        // 1. กดปุ่มเพื่อเปิดฟอร์มกรอกชื่อ
+        if (interaction.isButton() && interaction.customId === 'modal_role_trigger') {
+            const modal = new ModalBuilder()
+                .setCustomId('role_nickname_modal')
+                .setTitle('ตั้งชื่อและรับยศ');
+
+            const nicknameInput = new TextInputBuilder()
+                .setCustomId('nickname_input')
+                .setLabel('กรอกชื่อที่คุณต้องการใช้ในเซิร์ฟเวอร์')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('เช่น John_Doe')
+                .setRequired(true)
+                .setMaxLength(32);
+
+            const firstActionRow = new ActionRowBuilder().addComponents(nicknameInput);
+            modal.addComponents(firstActionRow);
+
+            return await interaction.showModal(modal);
         }
 
-        try {
-            const logChannel = await interaction.guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+        // 2. เมื่อกดตกลงจากฟอร์ม (เปลี่ยนชื่อ + ให้ยศ)
+        if (interaction.isModalSubmit() && interaction.customId === 'role_nickname_modal') {
+            const newNickname = interaction.fields.getTextInputValue('nickname_input');
+            const member = interaction.member;
+            const role = interaction.guild.roles.cache.get(ROLE_ID);
 
-            if (member.roles.cache.has(roleId)) {
-                // ถ้ามีอยู่แล้ว ให้ถอดออก
-                await member.roles.remove(roleId);
-                await interaction.reply({ 
-                    content: `✅ ถอดยศ **${role.name}** ออกจากคุณเรียบร้อยแล้วครับ`, 
+            if (!role) {
+                return interaction.reply({ 
+                    content: '❌ ไม่พบยศในระบบ กรุณาแจ้งแอดมิน', 
                     ephemeral: true 
                 });
-
-                // ส่ง Log รูปแบบ Markdown
-                if (logChannel) {
-                    await logChannel.send(`\`\`\`md
-# 🔴 ถอดยศสมาชิก
-- ชื่อ: ${member.user.tag}
-- ยศ: ${role.name}
-- เวลา: ${getTime()}
-\`\`\``);
-                }
-            } else {
-                // ถ้ายังไม่มี ให้เพิ่มยศ
-                await member.roles.add(roleId);
-                await interaction.reply({ 
-                    content: `🎉 รับยศ **${role.name}** เรียบร้อยแล้วครับ!`, 
-                    ephemeral: true 
-                });
-
-                // ส่ง Log รูปแบบ Markdown
-                if (logChannel) {
-                    await logChannel.send(`\`\`\`md
-# 🟢 รับยศสมาชิก
-- ชื่อ: ${member.user.tag}
-- ยศ: ${role.name}
-- เวลา: ${getTime()}
-\`\`\``);
-                }
             }
-        } catch (error) {
-            console.error('Error handling role button:', error);
-            await interaction.reply({ 
-                content: '❌ เกิดข้อผิดพลาด: บอทอาจไม่มีสิทธิ์จัดการยศนี้ หรือตำแหน่งยศบอทอยู่ต่ำกว่ายศเป้าหมาย', 
-                ephemeral: true 
-            });
+
+            try {
+                // เปลี่ยนชื่อเล่น
+                await member.setNickname(newNickname);
+
+                // ให้ยศ (ถ้ายังไม่มี)
+                if (!member.roles.cache.has(ROLE_ID)) {
+                    await member.roles.add(ROLE_ID);
+                }
+
+                await interaction.reply({ 
+                    content: `🎉 เปลี่ยนชื่อเป็น **${newNickname}** และรับยศ **${role.name}** เรียบร้อยแล้วครับ!`, 
+                    ephemeral: true 
+                });
+
+                // ส่ง Log
+                const logChannel = await interaction.guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+                if (logChannel) {
+                    await logChannel.send(`\`\`\`md
+# 🟢 สมาชิกรับยศใหม่
+- ชื่อดิสคอร์ด: ${member.user.tag}
+- ชื่อใหม่ในเซิร์ฟ: ${newNickname}
+- ยศที่ได้รับ: ${role.name}
+- เวลา: ${getTime()}
+\`\`\``);
+                }
+            } catch (error) {
+                console.error('Error handling modal:', error);
+                await interaction.reply({ 
+                    content: '❌ เกิดข้อผิดพลาด: บอทอาจไม่มีสิทธิ์เปลี่ยนชื่อ (เช่น เป็นเจ้าของเซิร์ฟเวอร์)', 
+                    ephemeral: true 
+                });
+            }
         }
     }
 };
