@@ -11,7 +11,7 @@ module.exports = {
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
 
-        // 1. กดปุ่มเพื่อเปิดฟอร์มกรอกชื่อ
+        // 1. ตรวจจับปุ่มที่ถูกต้อง (ให้ตรงกับใน ready.js)
         if (interaction.isButton() && interaction.customId === 'modal_role_trigger') {
             const modal = new ModalBuilder()
                 .setCustomId('role_nickname_modal')
@@ -31,7 +31,7 @@ module.exports = {
             return await interaction.showModal(modal);
         }
 
-        // 2. เมื่อกดตกลงจากฟอร์ม (เปลี่ยนชื่อ + ให้ยศ)
+        // 2. เมื่อผู้ใช้กดยืนยันส่งข้อมูลจากป๊อปอัป
         if (interaction.isModalSubmit() && interaction.customId === 'role_nickname_modal') {
             const newNickname = interaction.fields.getTextInputValue('nickname_input');
             const member = interaction.member;
@@ -48,7 +48,7 @@ module.exports = {
                 // เปลี่ยนชื่อเล่น
                 await member.setNickname(newNickname);
 
-                // ให้ยศ (ถ้ายังไม่มี)
+                // เพิ่มยศ
                 if (!member.roles.cache.has(ROLE_ID)) {
                     await member.roles.add(ROLE_ID);
                 }
@@ -62,7 +62,7 @@ module.exports = {
                 const logChannel = await interaction.guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
                 if (logChannel) {
                     await logChannel.send(`\`\`\`md
-# 🟢 สมาชิกรับยศใหม่
+# 🟢 สมาชิกรับยศและเปลี่ยนชื่อ
 - ชื่อดิสคอร์ด: ${member.user.tag}
 - ชื่อใหม่ในเซิร์ฟ: ${newNickname}
 - ยศที่ได้รับ: ${role.name}
@@ -72,7 +72,7 @@ module.exports = {
             } catch (error) {
                 console.error('Error handling modal:', error);
                 await interaction.reply({ 
-                    content: '❌ เกิดข้อผิดพลาด: บอทอาจไม่มีสิทธิ์เปลี่ยนชื่อ (เช่น เป็นเจ้าของเซิร์ฟเวอร์)', 
+                    content: '❌ เกิดข้อผิดพลาด: บอทอาจไม่มีสิทธิ์เปลี่ยนชื่อ (เช่น บอทสถานะต่ำกว่าเจ้าของเซิร์ฟเวอร์)', 
                     ephemeral: true 
                 });
             }
