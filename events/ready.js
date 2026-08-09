@@ -23,7 +23,7 @@ module.exports = {
                 // 2. สร้าง Embed พร้อมโลโก้เซิร์ฟเวอร์
                 const embed = new EmbedBuilder()
                     .setTitle('ยินดีต้อนรับสู่ ' + channel.guild.name)
-                    .setDescription('กดปุ่มด้านล่างเพื่อรับยศ **Regular** และเข้าสู่เซิร์ฟเวอร์ครับ')
+                    .setDescription('กดปุ่มด้านล่างเพื่อรับยศ **friend** และเข้าสู่เซิร์ฟเวอร์ครับ')
                     .setColor('#0099ff')
                     .setThumbnail(channel.guild.iconURL())
                     .setFooter({ text: 'ระบบจัดการยศอัตโนมัติ' });
