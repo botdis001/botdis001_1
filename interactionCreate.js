@@ -1,33 +1,33 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { Events } = require('discord.js');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('set-role-button')
-        .setDescription('วางปุ่มรับ/ถอดยศ ในห้องรับยศ')
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild), // เฉพาะแอดมินใช้ได้
-        
+    name: Events.InteractionCreate,
     async execute(interaction) {
-        // 📌 แก้ไขเป็นไอดีใหม่ของพี่เบิร์ดเรียบร้อยครับ
-        const ROLE_ID = '1356148472851726437'; 
+        // เช็กว่าเป็นเหตุการณ์การกดปุ่ม (Button) หรือไม่
+        if (!interaction.isButton()) return;
 
-        // 1. ดีไซน์การ์ด Embed แสดงรายละเอียด
-        const embed = new EmbedBuilder()
-            .setColor('#2ECC71') // เปลี่ยนเป็นสีเขียวมรกตให้เข้ากับปุ่ม
-            .setTitle('🎮 เลือกรับยศของคุณที่นี่!')
-            .setDescription('กดปุ่มสีเขียวด้านล่างนี้เพื่อรับยศหรือถอดยศเข้ากลุ่มได้เลยครับ')
-            .setFooter({ text: 'GAME Group • ระบบจัดการยศอัตโนมัติ' })
-            .setTimestamp();
+        // เช็กว่าปุ่มนี้คือปุ่มรับยศที่เราสร้างไว้หรือไม่ (เช็กจาก customId)
+        if (interaction.customId.startsWith('role_toggle_')) {
+            const roleId = interaction.customId.split('_')[2];
+            const member = interaction.member;
+            const role = interaction.guild.roles.cache.get(roleId);
 
-        // 2. สร้างปุ่มกดที่ผูกกับไอดีใหม่
-        const roleButton = new ButtonBuilder()
-            .setCustomId(`role_toggle_${ROLE_ID}`) // ลิงก์กับไฟล์ interactionCreate.js[cite: 3]
-            .setLabel('รับยศ / คืนยศ Member')
-            .setStyle(ButtonStyle.Success) // ปุ่มสีเขียว
-            .setEmoji('🎉');
+            if (!role) return interaction.reply({ content: '❌ ไม่พบยศนี้ในเซิร์ฟเวอร์', ephemeral: true });
 
-        const row = new ActionRowBuilder().addComponents(roleButton);
-
-        // 3. ส่งการ์ดพร้อมปุ่มออกไปในห้องแชท
-        await interaction.reply({ embeds: [embed], components: [row] });
+            try {
+                if (member.roles.cache.has(roleId)) {
+                    // ถ้ามีอยู่แล้ว ให้ลบออก
+                    await member.roles.remove(roleId);
+                    await interaction.reply({ content: `✅ ถอดยศ **${role.name}** ออกเรียบร้อยแล้วครับ`, ephemeral: true });
+                } else {
+                    // ถ้ายังไม่มี ให้เพิ่มยศ
+                    await member.roles.add(roleId);
+                    await interaction.reply({ content: `🎉 รับยศ **${role.name}** เรียบร้อยแล้วครับ!`, ephemeral: true });
+                }
+            } catch (error) {
+                console.error(error);
+                await interaction.reply({ content: '❌ เกิดข้อผิดพลาดในการจัดการยศ', ephemeral: true });
+            }
+        }
     },
 };
