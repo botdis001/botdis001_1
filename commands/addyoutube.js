@@ -1,4 +1,5 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+// ตรวจสอบเส้นทางเรียกไฟล์ youtubeNotifier ให้ถูกต้องตามโครงสร้างโปรเจกต์จริงของคุณ
 const youtubeNotifier = require('../events/youtubeNotifier');
 
 module.exports = {
@@ -15,8 +16,7 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
-        // จัดการดีเลย์ป้องกัน Discord ขึ้นแอปพลิเคชันไม่ตอบสนอง
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         if (!interaction.member.permissions.has('Administrator')) {
             return await interaction.editReply({ content: '❌ คุณไม่มีสิทธิ์ใช้งานคำสั่งนี้ (ต้องเป็นแอดมินเท่านั้น)' });
@@ -27,6 +27,11 @@ module.exports = {
 
         if (!channelId.startsWith('UC')) {
             return await interaction.editReply({ content: '❌ Channel ID ไม่ถูกต้อง (ต้องขึ้นต้นด้วย UC...)' });
+        }
+
+        // ป้องกัน Error กรณีที่ youtubeNotifier หรือช่องเก็บข้อมูลยังไม่ถูกสร้าง
+        if (!youtubeNotifier || !youtubeNotifier.channelsToTrack) {
+            return await interaction.editReply({ content: '❌ ระบบแจ้งเตือน YouTube ยังไม่พร้อมใช้งาน หรือยังไม่ได้กำหนดตัวแปร channelsToTrack ในไฟล์ youtubeNotifier.js' });
         }
 
         const channels = youtubeNotifier.channelsToTrack;
