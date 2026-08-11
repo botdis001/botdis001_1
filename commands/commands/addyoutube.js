@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const youtubeNotifier = require('../events/youtubeNotifier');
+const youtubeNotifier = require('../../events/youtubeNotifier');
 
 module.exports = {
     data: new SlashCommandBuilder()
