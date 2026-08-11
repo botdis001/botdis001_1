@@ -17,24 +17,35 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// 🔄 ระบบโหลดคำสั่ง (รองรับทั้งโฟลเดอร์ย่อย)
+// 🔄 ระบบโหลด Slash Commands (รองรับทั้งวางในโฟลเดอร์ commands/ และในโฟลเดอร์ย่อย)
 const foldersPath = path.join(__dirname, 'commands');
 if (fs.existsSync(foldersPath)) {
     const commandFolders = fs.readdirSync(foldersPath);
     for (const folder of commandFolders) {
-        const commandsPath = path.join(foldersPath, folder);
+        const itemPath = path.join(foldersPath, folder);
         
-        if (fs.lstatSync(commandsPath).isDirectory()) {
-            const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+        if (fs.lstatSync(itemPath).isDirectory()) {
+            // กรณีที่เป็นโฟลเดอร์ย่อย
+            const commandFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
             for (const file of commandFiles) {
                 try {
-                    const cmd = require(path.join(commandsPath, file));
+                    const cmd = require(path.join(itemPath, file));
                     if (cmd.data && cmd.execute) {
                         client.commands.set(cmd.data.name, cmd);
                     }
                 } catch (e) { 
                     console.error(`❌ โหลดคำสั่งไม่ได้: ${file}`, e.message); 
                 }
+            }
+        } else if (folder.endsWith('.js')) {
+            // กรณีที่วางไฟล์ .js ไว้ในโฟลเดอร์ commands/ โดยตรง
+            try {
+                const cmd = require(itemPath);
+                if (cmd.data && cmd.execute) {
+                    client.commands.set(cmd.data.name, cmd);
+                }
+            } catch (e) { 
+                console.error(`❌ โหลดคำสั่งไม่ได้: ${folder}`, e.message); 
             }
         }
     }
@@ -74,18 +85,27 @@ client.on('messageCreate', async (message) => {
     const foldersPath = path.join(__dirname, 'commands');
     const commandFolders = fs.readdirSync(foldersPath);
     for (const folder of commandFolders) {
-        const commandsPath = path.join(foldersPath, folder);
-        if (fs.lstatSync(commandsPath).isDirectory()) {
-            const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+        const itemPath = path.join(foldersPath, folder);
+        if (fs.lstatSync(itemPath).isDirectory()) {
+            const commandFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
             for (const file of commandFiles) {
                 try {
-                    const cmd = require(path.join(commandsPath, file));
+                    const cmd = require(path.join(itemPath, file));
                     if (cmd.name === commandName && typeof cmd.execute === 'function') {
                         await cmd.execute(message, args);
                     }
                 } catch (error) {
                     console.error(`❌ Error executing command ${file}:`, error);
                 }
+            }
+        } else if (folder.endsWith('.js')) {
+            try {
+                const cmd = require(itemPath);
+                if (cmd.name === commandName && typeof cmd.execute === 'function') {
+                    await cmd.execute(message, args);
+                }
+            } catch (error) {
+                console.error(`❌ Error executing command ${folder}:`, error);
             }
         }
     }
