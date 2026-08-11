@@ -1,3 +1,4 @@
+interaction.deferReply({ ephemeral: true })
 const { SlashCommandBuilder } = require('discord.js');
 const youtubeNotifier = require('../events/youtubeNotifier');
 
