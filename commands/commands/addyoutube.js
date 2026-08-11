@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const youtubeNotifier = require('../events/youtubeNotifier'); // ดึงค่าจากไฟล์ notifier
+const youtubeNotifier = require('../events/youtubeNotifier');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,9 +15,8 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
-        // เช็กสิทธิ์แอดมิน
         if (!interaction.member.permissions.has('Administrator')) {
-            return await interaction.reply({ content: '❌ คุณไม่มีสิทธิ์ใช้งานคำสั่งนี้', ephemeral: true });
+            return await interaction.reply({ content: '❌ คุณไม่มีสิทธิ์ใช้งานคำสั่งนี้ (ต้องเป็นแอดมินเท่านั้น)', ephemeral: true });
         }
 
         const channelId = interaction.options.getString('channel_id');
@@ -27,7 +26,6 @@ module.exports = {
             return await interaction.reply({ content: '❌ Channel ID ไม่ถูกต้อง (ต้องขึ้นต้นด้วย UC...)', ephemeral: true });
         }
 
-        // ดึง channelsToTrack จากไฟล์ youtubeNotifier
         const channels = youtubeNotifier.channelsToTrack;
         const exists = channels.find(c => c.id === channelId);
 
@@ -35,7 +33,6 @@ module.exports = {
             return await interaction.reply({ content: `⚠️ ช่อง **${exists.name}** มีอยู่ในระบบติดตามอยู่แล้วครับ!`, ephemeral: true });
         }
 
-        // เพิ่มช่องใหม่
         channels.push({ id: channelId, name: channelName });
 
         await interaction.reply({ 
@@ -43,6 +40,6 @@ module.exports = {
             ephemeral: false 
         });
         
-        console.log(`➕ แอดมิน ${interaction.user.tag} เพิ่มช่อง: ${channelName}`);
+        console.log(`➕ แอดมิน ${interaction.user.tag} ได้เพิ่มช่อง YouTube ใหม่: ${channelName} (${channelId})`);
     }
 };
