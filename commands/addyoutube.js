@@ -1,11 +1,10 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-// ตรวจสอบเส้นทางเรียกไฟล์ youtubeNotifier ให้ถูกต้องตามโครงสร้างโปรเจกต์จริงของคุณ
 const youtubeNotifier = require('../events/youtubeNotifier');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('addyoutube')
-        .setDescription('เพิ่มช่อง YouTube สำหรับให้บอทติดตามแจ้งเตือน')
+        .setDescription('เพิ่มช่อง YouTube สำหรับให้บอทติดตามแจ้งเตือนคลิปใหม่')
         .addStringOption(option =>
             option.setName('channel_id')
                 .setDescription('Channel ID ของยูทูป (ขึ้นต้นด้วย UC...)')
@@ -29,9 +28,8 @@ module.exports = {
             return await interaction.editReply({ content: '❌ Channel ID ไม่ถูกต้อง (ต้องขึ้นต้นด้วย UC...)' });
         }
 
-        // ป้องกัน Error กรณีที่ youtubeNotifier หรือช่องเก็บข้อมูลยังไม่ถูกสร้าง
         if (!youtubeNotifier || !youtubeNotifier.channelsToTrack) {
-            return await interaction.editReply({ content: '❌ ระบบแจ้งเตือน YouTube ยังไม่พร้อมใช้งาน หรือยังไม่ได้กำหนดตัวแปร channelsToTrack ในไฟล์ youtubeNotifier.js' });
+            return await interaction.editReply({ content: '❌ ระบบแจ้งเตือน YouTube ยังไม่พร้อมใช้งาน' });
         }
 
         const channels = youtubeNotifier.channelsToTrack;
