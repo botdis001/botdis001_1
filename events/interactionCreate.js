@@ -16,7 +16,34 @@ module.exports = {
             console.log(`[DEBUG] มีคนกดปุ่ม Custom ID: ${interaction.customId}`);
         }
 
+        // ==========================================
+        // ⚡ 0. ส่วนจัดการ Slash Commands (คำสั่ง / ต่างๆ)
+        // ==========================================
+        if (interaction.isChatInputCommand()) {
+            const command = interaction.client.commands.get(interaction.commandName);
+
+            if (!command) {
+                console.error(`[ERROR] ไม่พบคำสั่ง /${interaction.commandName}`);
+                return;
+            }
+
+            try {
+                await command.execute(interaction);
+            } catch (error) {
+                console.error(`[ERROR] เกิดข้อผิดพลาดในการรันคำสั่ง /${interaction.commandName}:`, error);
+                
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({ content: '❌ เกิดข้อผิดพลาดในการใช้คำสั่งนี้!', ephemeral: true }).catch(() => {});
+                } else {
+                    await interaction.reply({ content: '❌ เกิดข้อผิดพลาดในการใช้คำสั่งนี้!', ephemeral: true }).catch(() => {});
+                }
+            }
+            return;
+        }
+
+        // ==========================================
         // 1. กดปุ่มเพื่อเปิดฟอร์มกรอกชื่อ
+        // ==========================================
         if (interaction.isButton() && interaction.customId === 'modal_role_trigger') {
             const modal = new ModalBuilder()
                 .setCustomId('role_nickname_modal')
@@ -37,7 +64,9 @@ module.exports = {
             return await interaction.showModal(modal);
         }
 
+        // ==========================================
         // 2. เมื่อผู้ใช้กดยืนยันส่งข้อมูลจากป๊อปอัป
+        // ==========================================
         if (interaction.isModalSubmit() && interaction.customId === 'role_nickname_modal') {
             const newNickname = interaction.fields.getTextInputValue('nickname_input');
             const member = interaction.member;
