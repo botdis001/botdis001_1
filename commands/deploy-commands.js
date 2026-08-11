@@ -21,7 +21,9 @@ for (const folder of commandFolders) {
             }
         }
     } else if (folder.endsWith('.js')) {
-        // รองรับกรณีที่มีไฟล์ .js วางอยู่ในโฟลเดอร์ commands โดยตรง
+        // 🛑 เพิ่มเงื่อนไขข้ามไฟล์ deploy-commands.js ไม่ให้มองว่าเป็นคำสั่งบอท
+        if (folder === 'deploy-commands.js') continue;
+
         const command = require(itemPath);
         if ('data' in command && 'execute' in command) {
             commands.push(command.data.toJSON());
