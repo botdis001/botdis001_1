@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
     name: 'interactionCreate',
@@ -76,9 +76,33 @@ module.exports = {
 
             if (!role) {
                 console.log(`[DEBUG] ❌ ไม่พบยศ ID: ${ROLE_ID} ในเซิร์ฟเวอร์`);
-                return interaction.reply({ 
+                return await interaction.reply({ 
                     content: '❌ ไม่พบยศในระบบ กรุณาแจ้งแอดมิน', 
                     ephemeral: true 
+                });
+            }
+
+            // ตรวจสอบสิทธิ์ว่าบอทสามารถเปลี่ยนชื่อสมาชิกคนนี้ได้หรือไม่ (เช่น กรณีเป็นเจ้าของเซิร์ฟเวอร์หรือยศสูงกว่าบอท)
+            if (member.id === interaction.guild.ownerId) {
+                return await interaction.reply({
+                    content: '❌ บอทไม่สามารถเปลี่ยนชื่อของเจ้าของเซิร์ฟเวอร์ได้!',
+                    ephemeral: true
+                });
+            }
+
+            if (!member.manageable) {
+                return await interaction.reply({
+                    content: '❌ บอทไม่มีสิทธิ์เปลี่ยนชื่อหรือจัดการผู้ใช้นี้ (ยศของบอทอาจจะต่ำกว่าสมาชิกคนนี้)',
+                    ephemeral: true
+                });
+            }
+
+            // ตรวจสอบสิทธิ์ที่บอทจะให้ยศได้หรือไม่
+            const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
+            if (role.position >= botMember.roles.highest.position) {
+                return await interaction.reply({
+                    content: '❌ บอทไม่สามารถให้ยศนี้ได้ เนื่องจากตำแหน่งยศสูงกว่าหรือเท่ากับยศสูงสุดของบอท',
+                    ephemeral: true
                 });
             }
 
@@ -98,7 +122,7 @@ module.exports = {
                     ephemeral: true 
                 });
 
-                // ส่ง Log
+                // ส่ง Log ไปยังห้องที่กำหนด
                 const logChannel = await interaction.guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
                 if (logChannel) {
                     await logChannel.send(`\`\`\`md
@@ -113,11 +137,15 @@ module.exports = {
                     console.log(`[DEBUG] ❌ ไม่พบห้อง Log ID: ${LOG_CHANNEL_ID}`);
                 }
             } catch (error) {
-                console.error('[DEBUG] ❌ Error ตอนเปลี่ยนชื่อหรือให้ยศ:', error.message);
-                await interaction.reply({ 
-                    content: '❌ เกิดข้อผิดพลาด: บอทอาจไม่มีสิทธิ์เปลี่ยนชื่อ (เช่น บอทสถานะต่ำกว่าเจ้าของเซิร์ฟเวอร์)', 
-                    ephemeral: true 
-                });
+                console.error('[DEBUG] ❌ Error ตอนเปลี่ยนชื่อหรือให้ยศ:', error);
+                
+                const errorMessage = '❌ เกิดข้อผิดพลาด: ไม่สามารถเปลี่ยนชื่อหรือให้ยศได้ กรุณาตรวจสอบสิทธิ์ของบอท';
+                
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({ content: errorMessage, ephemeral: true }).catch(() => {});
+                } else {
+                    await interaction.reply({ content: errorMessage, ephemeral: true }).catch(() => {});
+                }
             }
         }
     }
