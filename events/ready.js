@@ -12,20 +12,17 @@ module.exports = {
             const channel = await client.channels.fetch(ROLE_CHANNEL_ID);
             
             if (channel) {
-                // ดึงข้อความมาลบทั้งหมดในห้องนี้
                 const fetchedMessages = await channel.messages.fetch({ limit: 20 });
                 if (fetchedMessages.size > 0) {
                     await channel.bulkDelete(fetchedMessages).catch(async () => {
-                        // ถ้า bulk ไม่ได้ ให้ลบทีละข้อความ
                         for (const msg of fetchedMessages.values()) {
                             await msg.delete().catch(() => {});
                         }
                     });
                 }
 
-                // ตกแต่งหน้า Embed ให้สวยงามและพรีเมียมยิ่งขึ้น
                 const embed = new EmbedBuilder()
-                    .setColor('#5865F2') // สีธีม Discord Blurple สวยงามทันสมัย
+                    .setColor('#5865F2')
                     .setTitle(`✨ ยินดีต้อนรับสู่ ${channel.guild.name}`)
                     .setDescription(
                         'ยินดีต้อนรับสมาชิกใหม่ทุกท่านเข้าสู่เซิร์ฟเวอร์ของเราครับ!\n\n' +
@@ -36,7 +33,7 @@ module.exports = {
                         '⚠️ *หมายเหตุ: กรุณาใช้ชื่อที่สุภาพและเหมาะสมเพื่อความสนุกในการร่วมcommunity*'
                     )
                     .setThumbnail(channel.guild.iconURL({ dynamic: true }))
-                    .setImage('https://i.imgur.com/your_banner_image_here.png') // (ถ้ามีแบนเนอร์สวยๆ สามารถใส่ลิงก์รูปภาพตรงนี้ได้ หรือลบบรรทัดนี้ออกได้ครับ)
+                    // ลบบรรทัด .setImage ออกแล้ว รูปจะไม่โหลดค้างครับ
                     .addFields(
                         { name: '🔒 ความปลอดภัย', value: 'ระบบอัตโนมัติ ปลอดภัย 100%', inline: true },
                         { name: '💎 สิทธิพิเศษ', value: 'รับยศ **friend** เพื่อปลดล็อกห้องพูดคุย', inline: true }
@@ -47,18 +44,17 @@ module.exports = {
                     })
                     .setTimestamp();
 
-                // ตกแต่งปุ่มกดให้ดูโดดเด่น
                 const button = new ActionRowBuilder()
                     .addComponents(
                         new ButtonBuilder()
-                            .setCustomId('modal_role_trigger') // ตัวเรียกฟอร์ม (ต้องตรงกับ interactionCreate)
+                            .setCustomId('modal_role_trigger')
                             .setLabel('📝 ลงทะเบียน / ตั้งชื่อและรับยศ')
                             .setStyle(ButtonStyle.Primary)
                             .setEmoji('🎉'),
                     );
 
                 await channel.send({ embeds: [embed], components: [button] });
-                console.log('✅ ลบข้อความเก่าและสร้างปุ่มใหม่ (Modal แบบตกแต่ง) สำเร็จ!');
+                console.log('✅ ลบข้อความเก่าและสร้างปุ่มใหม่สำเร็จ!');
             }
         } catch (err) {
             console.error('❌ เกิดข้อผิดพลาดตอนสร้างปุ่ม:', err.message);
