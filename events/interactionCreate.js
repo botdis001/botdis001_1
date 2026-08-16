@@ -1,4 +1,3 @@
-```js
 const {
     ActionRowBuilder,
     ModalBuilder,
@@ -7,18 +6,20 @@ const {
     StringSelectMenuBuilder
 } = require('discord.js');
 
+// เก็บข้อมูลสมาชิกระหว่างรอเลือกเกม
+const registrationData = new Map();
+
 module.exports = {
     name: 'interactionCreate',
 
     async execute(interaction) {
 
         // ==========================================
-        // ⚙️ CONFIG
+        // CONFIG
         // ==========================================
 
         const LOG_CHANNEL_ID = '1538429606409928815';
 
-        // Role ที่สามารถเลือกเป็นเกมได้
         const GAME_ROLE_IDS = [
             '1527270612291158077',
             '1462774552726606017',
@@ -29,10 +30,10 @@ module.exports = {
         const STEAM_API_KEY = process.env.STEAM_API_KEY;
 
         // ==========================================
-        // 🕐 เวลาไทย
+        // เวลาไทย
         // ==========================================
 
-        const getTime = () => {
+        function getTime() {
             return new Date().toLocaleString('th-TH', {
                 timeZone: 'Asia/Bangkok',
                 year: 'numeric',
@@ -42,10 +43,10 @@ module.exports = {
                 minute: '2-digit',
                 second: '2-digit'
             });
-        };
+        }
 
         // ==========================================
-        // 🎮 ตรวจ Steam VAC
+        // ตรวจ Steam / VAC
         // ==========================================
 
         async function checkSteamVAC(steamId) {
@@ -58,8 +59,8 @@ module.exports = {
 
             const url =
                 'https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/' +
-                `?key=${encodeURIComponent(STEAM_API_KEY)}` +
-                `&steamids=${encodeURIComponent(steamId)}`;
+                '?key=' + encodeURIComponent(STEAM_API_KEY) +
+                '&steamids=' + encodeURIComponent(steamId);
 
             const response = await fetch(url);
 
@@ -86,39 +87,21 @@ module.exports = {
             return {
                 steamId: player.SteamId,
                 vacBanned: Boolean(player.VACBanned),
-                numberOfVACBans:
-                    Number(player.NumberOfVACBans || 0),
-                numberOfGameBans:
-                    Number(player.NumberOfGameBans || 0),
-                communityBanned:
-                    Boolean(player.CommunityBanned),
-                economyBan:
-                    player.EconomyBan || 'none',
-                daysSinceLastBan:
-                    Number(player.DaysSinceLastBan || 0)
+                numberOfVACBans: Number(
+                    player.NumberOfVACBans || 0
+                ),
+                numberOfGameBans: Number(
+                    player.NumberOfGameBans || 0
+                ),
+                communityBanned: Boolean(
+                    player.CommunityBanned
+                ),
+                economyBan: player.EconomyBan || 'none'
             };
         }
 
         // ==========================================
-        // 🔗 Steam Profile
-        // ==========================================
-
-        const getSteamProfile = (steamId) => {
-            return `https://steamcommunity.com/profiles/${steamId}/`;
-        };
-
-        // ==========================================
-        // 🔍 DEBUG
-        // ==========================================
-
-        if (interaction.isButton()) {
-            console.log(
-                `[DEBUG] Button: ${interaction.customId}`
-            );
-        }
-
-        // ==========================================
-        // ⚡ 0. Slash Commands
+        // Slash Commands
         // ==========================================
 
         if (interaction.isChatInputCommand()) {
@@ -129,19 +112,15 @@ module.exports = {
                 );
 
             if (!command) {
-                console.error(
-                    `[ERROR] ไม่พบคำสั่ง /${interaction.commandName}`
-                );
                 return;
             }
 
             try {
                 await command.execute(interaction);
-
             } catch (error) {
 
                 console.error(
-                    `[ERROR] /${interaction.commandName}:`,
+                    `❌ Error /${interaction.commandName}:`,
                     error
                 );
 
@@ -149,18 +128,13 @@ module.exports = {
                     interaction.replied ||
                     interaction.deferred
                 ) {
-
                     await interaction.followUp({
-                        content:
-                            '❌ เกิดข้อผิดพลาดในการใช้คำสั่งนี้!',
+                        content: '❌ เกิดข้อผิดพลาดในการใช้คำสั่งนี้',
                         ephemeral: true
                     }).catch(() => {});
-
                 } else {
-
                     await interaction.reply({
-                        content:
-                            '❌ เกิดข้อผิดพลาดในการใช้คำสั่งนี้!',
+                        content: '❌ เกิดข้อผิดพลาดในการใช้คำสั่งนี้',
                         ephemeral: true
                     }).catch(() => {});
                 }
@@ -170,7 +144,7 @@ module.exports = {
         }
 
         // ==========================================
-        // 📝 1. กดปุ่มลงทะเบียน
+        // กดปุ่มลงทะเบียน
         // ==========================================
 
         if (
@@ -179,95 +153,62 @@ module.exports = {
         ) {
 
             const modal = new ModalBuilder()
-                .setCustomId(
-                    'role_registration_modal'
-                )
-                .setTitle(
-                    'ตั้งชื่อและลงทะเบียน Steam'
-                );
+                .setCustomId('role_registration_modal')
+                .setTitle('ลงทะเบียน Steam');
 
-            // ชื่อ
             const nicknameInput =
                 new TextInputBuilder()
-                    .setCustomId(
-                        'nickname_input'
-                    )
-                    .setLabel(
-                        'ชื่อที่ต้องการใช้ในเซิร์ฟเวอร์'
-                    )
-                    .setStyle(
-                        TextInputStyle.Short
-                    )
-                    .setPlaceholder(
-                        'เช่น Masaru'
-                    )
+                    .setCustomId('nickname_input')
+                    .setLabel('ชื่อที่ต้องการใช้ในเซิร์ฟเวอร์')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('เช่น Masaru')
                     .setRequired(true)
                     .setMinLength(1)
                     .setMaxLength(32);
 
-            // Steam ID
             const steamInput =
                 new TextInputBuilder()
-                    .setCustomId(
-                        'steam_id_input'
-                    )
-                    .setLabel(
-                        'Steam ID64 (17 หลัก)'
-                    )
-                    .setStyle(
-                        TextInputStyle.Short
-                    )
-                    .setPlaceholder(
-                        'เช่น 7656119XXXXXXXXXX'
-                    )
+                    .setCustomId('steam_id_input')
+                    .setLabel('Steam ID64 จำนวน 17 หลัก')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('เช่น 7656119XXXXXXXXXX')
                     .setRequired(true)
                     .setMinLength(17)
                     .setMaxLength(17);
 
             const nicknameRow =
                 new ActionRowBuilder()
-                    .addComponents(
-                        nicknameInput
-                    );
+                    .addComponents(nicknameInput);
 
             const steamRow =
                 new ActionRowBuilder()
-                    .addComponents(
-                        steamInput
-                    );
+                    .addComponents(steamInput);
 
             modal.addComponents(
                 nicknameRow,
                 steamRow
             );
 
-            return await interaction.showModal(
-                modal
-            );
+            return await interaction.showModal(modal);
         }
 
         // ==========================================
-        // 📝 2. รับข้อมูลจาก Modal
+        // ส่ง Modal
         // ==========================================
 
         if (
             interaction.isModalSubmit() &&
-            interaction.customId ===
-                'role_registration_modal'
+            interaction.customId === 'role_registration_modal'
         ) {
 
-            const newNickname =
+            const nickname =
                 interaction.fields
-                    .getTextInputValue(
-                        'nickname_input'
-                    )
+                    .getTextInputValue('nickname_input')
                     .trim();
 
             const steamId =
                 interaction.fields
-                    .getTextInputValue(
-                        'steam_id_input'
-                    )
+                    .getTextInputValue('steam_id_input')
                     .trim();
 
             const member = interaction.member;
@@ -275,80 +216,47 @@ module.exports = {
 
             if (!guild || !member) {
                 return await interaction.reply({
-                    content:
-                        '❌ ไม่สามารถอ่านข้อมูลเซิร์ฟเวอร์ได้',
+                    content: '❌ ไม่พบข้อมูลสมาชิก',
                     ephemeral: true
                 });
             }
 
-            console.log(
-                `[DEBUG] ${member.user.tag} ลงทะเบียน`
-            );
-
-            console.log(
-                `[DEBUG] Steam ID: ${steamId}`
-            );
-
-            // ==========================================
-            // 🔢 ตรวจ Steam ID
-            // ==========================================
-
+            // ตรวจ Steam ID
             if (!/^\d{17}$/.test(steamId)) {
-
                 return await interaction.reply({
                     content:
                         '❌ Steam ID ไม่ถูกต้อง\n\n' +
-                        'กรุณากรอก **Steam ID64 จำนวน 17 หลัก**\n' +
-                        'ตัวอย่าง: `7656119XXXXXXXXXX`',
+                        'กรุณากรอก Steam ID64 จำนวน 17 หลัก',
                     ephemeral: true
                 });
             }
 
-            // ==========================================
-            // ⏳ ตอบก่อนตรวจ API
-            // ==========================================
-
             await interaction.reply({
                 content:
-                    '⏳ กำลังตรวจสอบ Steam และ VAC...\n' +
-                    'กรุณารอสักครู่',
+                    '⏳ กำลังตรวจสอบ Steam และ VAC...',
                 ephemeral: true
             });
-
-            // ==========================================
-            // 🛡️ ตรวจ VAC
-            // ==========================================
 
             let vacData;
 
             try {
 
                 vacData =
-                    await checkSteamVAC(
-                        steamId
-                    );
+                    await checkSteamVAC(steamId);
 
             } catch (error) {
 
                 console.error(
-                    '[ERROR] Steam API:',
+                    '❌ Steam API:',
                     error.message
                 );
 
                 return await interaction.editReply({
                     content:
-                        '❌ ไม่สามารถตรวจสอบ Steam ได้\n\n' +
-                        'กรุณาตรวจสอบว่า:\n' +
-                        '• Steam ID เป็น SteamID64 17 หลัก\n' +
-                        '• Steam API Key ถูกต้อง\n' +
-                        '• Steam ID เป็นของบัญชีที่มีอยู่จริง\n\n' +
+                        '❌ ตรวจสอบ Steam ไม่สำเร็จ\n\n' +
                         `รายละเอียด: ${error.message}`
                 }).catch(() => {});
             }
-
-            // ==========================================
-            // 🚨 สถานะ VAC
-            // ==========================================
 
             const vacStatus =
                 vacData.vacBanned
@@ -356,7 +264,7 @@ module.exports = {
                     : '🟢 ไม่พบ VAC Ban';
 
             // ==========================================
-            // 🎮 ดึง Role เกม
+            // ดึง Role เกม
             // ==========================================
 
             const gameRoles = [];
@@ -364,31 +272,51 @@ module.exports = {
             for (const roleId of GAME_ROLE_IDS) {
 
                 const role =
-                    guild.roles.cache.get(
-                        roleId
-                    );
+                    guild.roles.cache.get(roleId);
 
-                if (!role) {
+                if (role) {
+                    gameRoles.push(role);
+                } else {
                     console.error(
-                        `❌ ไม่พบ Role ID: ${roleId}`
+                        `❌ ไม่พบ Role: ${roleId}`
                     );
-                    continue;
                 }
-
-                gameRoles.push(role);
             }
 
             if (gameRoles.length === 0) {
 
                 return await interaction.editReply({
                     content:
-                        '❌ ไม่พบยศเกมที่ตั้งค่าไว้ในระบบ\n' +
-                        'กรุณาแจ้งแอดมิน'
+                        '❌ ไม่พบยศเกมในเซิร์ฟเวอร์'
                 }).catch(() => {});
             }
 
             // ==========================================
-            // 🎮 สร้างเมนูเลือกเกม
+            // เก็บข้อมูลสมาชิก
+            // ==========================================
+
+            registrationData.set(member.id, {
+                nickname: nickname,
+                steamId: steamId,
+                vacData: vacData,
+                createdAt: Date.now()
+            });
+
+            // ลบข้อมูลเก่าหลัง 10 นาที
+            setTimeout(() => {
+                const data =
+                    registrationData.get(member.id);
+
+                if (
+                    data &&
+                    Date.now() - data.createdAt >= 10 * 60 * 1000
+                ) {
+                    registrationData.delete(member.id);
+                }
+            }, 10 * 60 * 1000);
+
+            // ==========================================
+            // สร้างเมนูเกม
             // ==========================================
 
             const options = gameRoles.map(role => ({
@@ -410,16 +338,14 @@ module.exports = {
 
             const row =
                 new ActionRowBuilder()
-                    .addComponents(
-                        selectMenu
-                    );
+                    .addComponents(selectMenu);
 
             await interaction.editReply({
                 content:
-                    `✅ ตรวจสอบ Steam สำเร็จ\n\n` +
-                    `🎮 Steam ID: **${steamId}**\n` +
+                    '✅ ตรวจสอบ Steam สำเร็จ\n\n' +
+                    `🎮 Steam ID64: **${steamId}**\n` +
                     `${vacStatus}\n\n` +
-                    `กรุณาเลือก **เกมที่ต้องการรับยศ** จากเมนูด้านล่าง`,
+                    '👇 กรุณาเลือกเกมที่ต้องการรับยศ',
                 components: [row]
             });
 
@@ -427,7 +353,7 @@ module.exports = {
         }
 
         // ==========================================
-        // 🎮 3. เลือกเกม
+        // เลือกเกม
         // ==========================================
 
         if (
@@ -437,20 +363,35 @@ module.exports = {
             )
         ) {
 
-            const ownerId =
+            const memberId =
                 interaction.customId.replace(
                     'game_role_select_',
                     ''
                 );
 
-            // ป้องกันคนอื่นมากดเมนู
+            // ป้องกันคนอื่นกด
             if (
-                interaction.user.id !== ownerId
+                interaction.user.id !== memberId
             ) {
-
                 return await interaction.reply({
                     content:
                         '❌ เมนูนี้เป็นของสมาชิกคนอื่น',
+                    ephemeral: true
+                });
+            }
+
+            // ==========================================
+            // ดึงข้อมูลที่เก็บไว้
+            // ==========================================
+
+            const data =
+                registrationData.get(memberId);
+
+            if (!data) {
+                return await interaction.reply({
+                    content:
+                        '❌ ข้อมูลการลงทะเบียนหมดอายุแล้ว\n' +
+                        'กรุณากดลงทะเบียนใหม่',
                     ephemeral: true
                 });
             }
@@ -459,7 +400,7 @@ module.exports = {
                 interaction.values[0];
 
             // ==========================================
-            // ตรวจว่า Role อยู่ในรายการที่อนุญาต
+            // ตรวจ Role
             // ==========================================
 
             if (
@@ -467,19 +408,15 @@ module.exports = {
                     selectedRoleId
                 )
             ) {
-
                 return await interaction.reply({
                     content:
-                        '❌ ยศเกมนี้ไม่ได้รับอนุญาต',
+                        '❌ ยศนี้ไม่ได้อยู่ในรายการเกมที่อนุญาต',
                     ephemeral: true
                 });
             }
 
-            const guild =
-                interaction.guild;
-
-            const member =
-                interaction.member;
+            const guild = interaction.guild;
+            const member = interaction.member;
 
             const selectedRole =
                 guild.roles.cache.get(
@@ -487,16 +424,15 @@ module.exports = {
                 );
 
             if (!selectedRole) {
-
                 return await interaction.reply({
                     content:
-                        '❌ ไม่พบยศเกมนี้ในเซิร์ฟเวอร์',
+                        '❌ ไม่พบยศเกมนี้',
                     ephemeral: true
                 });
             }
 
             // ==========================================
-            // 🤖 ตรวจบอทจัดการ Role
+            // ตรวจตำแหน่ง Role ของบอท
             // ==========================================
 
             const botMember =
@@ -506,10 +442,9 @@ module.exports = {
                 );
 
             if (!botMember) {
-
                 return await interaction.reply({
                     content:
-                        '❌ ไม่สามารถตรวจสอบยศของบอทได้',
+                        '❌ ไม่พบข้อมูลยศของบอท',
                     ephemeral: true
                 });
             }
@@ -518,82 +453,21 @@ module.exports = {
                 selectedRole.position >=
                 botMember.roles.highest.position
             ) {
-
                 return await interaction.reply({
                     content:
-                        '❌ บอทไม่สามารถให้ยศนี้ได้\n' +
-                        'กรุณาเลื่อนยศบอทให้อยู่สูงกว่ายศเกม',
+                        '❌ บอทไม่สามารถให้ยศนี้ได้\n\n' +
+                        'ให้ลาก Role ของบอทขึ้นไปอยู่สูงกว่า Role เกม',
                     ephemeral: true
                 });
             }
 
             // ==========================================
-            // 📝 อ่านข้อมูล Steam จากข้อความเดิม
-            // ==========================================
-
-            const originalMessage =
-                interaction.message;
-
-            let steamId = 'ไม่ทราบ';
-
-            if (
-                originalMessage &&
-                originalMessage.content
-            ) {
-
-                const match =
-                    originalMessage.content.match(
-                        /Steam ID:\s*\*\*(\d{17})\*\*/
-                    );
-
-                if (match) {
-                    steamId = match[1];
-                }
-            }
-
-            // ==========================================
-            // 🛡️ ตรวจ VAC อีกครั้งเพื่อความปลอดภัย
-            // ==========================================
-
-            let vacData = null;
-
-            if (
-                steamId !== 'ไม่ทราบ'
-            ) {
-
-                try {
-
-                    vacData =
-                        await checkSteamVAC(
-                            steamId
-                        );
-
-                } catch (error) {
-
-                    console.error(
-                        '[ERROR] ตรวจ VAC รอบสอง:',
-                        error.message
-                    );
-                }
-            }
-
-            const vacStatus =
-                vacData
-                    ? (
-                        vacData.vacBanned
-                            ? '🔴 พบ VAC Ban'
-                            : '🟢 ไม่พบ VAC Ban'
-                    )
-                    : '⚠️ ไม่สามารถอ่านข้อมูล VAC ซ้ำได้';
-
-            // ==========================================
-            // 📝 เปลี่ยนชื่อ
+            // เปลี่ยนชื่อ
             // ==========================================
 
             if (
                 member.id === guild.ownerId
             ) {
-
                 return await interaction.reply({
                     content:
                         '❌ บอทไม่สามารถเปลี่ยนชื่อเจ้าของเซิร์ฟเวอร์ได้',
@@ -602,7 +476,6 @@ module.exports = {
             }
 
             if (!member.manageable) {
-
                 return await interaction.reply({
                     content:
                         '❌ บอทไม่มีสิทธิ์เปลี่ยนชื่อสมาชิกนี้',
@@ -610,29 +483,35 @@ module.exports = {
                 });
             }
 
-            // ==========================================
-            // 🏷️ แจก Role
-            // ==========================================
-
             try {
 
+                // เปลี่ยนชื่อเป็นชื่อที่กรอก
                 await member.setNickname(
-                    member.nickname || member.user.username
-                ).catch(() => {});
+                    data.nickname
+                );
 
+                // แจก Role
                 if (
                     !member.roles.cache.has(
                         selectedRole.id
                     )
                 ) {
-
                     await member.roles.add(
                         selectedRole
                     );
                 }
 
                 // ==========================================
-                // 📋 Log
+                // VAC
+                // ==========================================
+
+                const vacStatus =
+                    data.vacData.vacBanned
+                        ? '🔴 พบ VAC Ban'
+                        : '🟢 ไม่พบ VAC Ban';
+
+                // ==========================================
+                // LOG
                 // ==========================================
 
                 const logChannel =
@@ -642,66 +521,73 @@ module.exports = {
 
                 if (logChannel) {
 
-                    const logTitle =
-                        vacData &&
-                        vacData.vacBanned
+                    const title =
+                        data.vacData.vacBanned
                             ? '# 🔴 สมาชิกรับยศเกม - พบ VAC'
                             : '# 🟢 สมาชิกรับยศเกม';
 
-                    await logChannel.send(
-                        `\`\`\`md
-${logTitle}
+                    const logText =
+`${title}
 
 - ชื่อดิสคอร์ด: ${member.user.tag}
 - Discord User ID: ${member.user.id}
-- ชื่อในเซิร์ฟ: ${member.displayName}
-- Steam ID64: ${steamId}
-- Steam Profile: ${getSteamProfile(steamId)}
+- ชื่อในเซิร์ฟ: ${data.nickname}
+- Steam ID64: ${data.steamId}
+- Steam Profile: https://steamcommunity.com/profiles/${data.steamId}
 - VAC: ${vacStatus}
-- VAC Ban: ${vacData ? vacData.numberOfVACBans : 'ไม่ทราบ'}
-- Game Ban: ${vacData ? vacData.numberOfGameBans : 'ไม่ทราบ'}
+- VAC Ban: ${data.vacData.numberOfVACBans}
+- Game Ban: ${data.vacData.numberOfGameBans}
 - เกมที่เลือก: ${selectedRole.name}
 - ยศที่ได้รับ: ${selectedRole.name}
 - Role ID: ${selectedRole.id}
-- เวลา: ${getTime()}
-\`\`\``
+- เวลา: ${getTime()}`;
+
+                    await logChannel.send(
+                        `\`\`\`md\n${logText}\n\`\`\``
                     );
                 }
 
                 // ==========================================
-                // 💬 ตอบสมาชิก
+                // ลบข้อมูลชั่วคราว
+                // ==========================================
+
+                registrationData.delete(
+                    member.id
+                );
+
+                // ==========================================
+                // ตอบสมาชิก
                 // ==========================================
 
                 await interaction.update({
                     content:
-                        `🎉 **ลงทะเบียนสำเร็จ!**\n\n` +
-                        `👤 ชื่อในเซิร์ฟ: **${member.displayName}**\n` +
+                        '🎉 **ลงทะเบียนสำเร็จ!**\n\n' +
+                        `👤 ชื่อในเซิร์ฟ: **${data.nickname}**\n` +
                         `🎮 เกม: **${selectedRole.name}**\n` +
                         `🏷️ ยศที่ได้รับ: **${selectedRole.name}**\n` +
                         `${vacStatus}\n\n` +
-                        `ขอบคุณสำหรับการลงทะเบียนครับ!`,
+                        'ขอบคุณสำหรับการลงทะเบียนครับ!',
                     components: []
                 });
 
                 console.log(
-                    `✅ ${member.user.tag} ได้รับ Role ${selectedRole.name} (${selectedRole.id})`
+                    `✅ ${member.user.tag} ได้รับยศ ${selectedRole.name}`
                 );
 
             } catch (error) {
 
                 console.error(
-                    '[ERROR] แจก Role:',
+                    '❌ เกิดข้อผิดพลาดตอนลงทะเบียน:',
                     error
                 );
 
                 await interaction.reply({
                     content:
-                        '❌ ไม่สามารถให้ยศได้\n' +
-                        'กรุณาตรวจสอบสิทธิ์และตำแหน่งยศของบอท',
+                        '❌ เกิดข้อผิดพลาดในการเปลี่ยนชื่อหรือให้ยศ\n' +
+                        'กรุณาตรวจสอบสิทธิ์ของบอท',
                     ephemeral: true
                 }).catch(() => {});
             }
         }
     }
 };
-```
