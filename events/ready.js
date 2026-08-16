@@ -1,4 +1,3 @@
-```js
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -19,72 +18,47 @@ module.exports = {
             const channel = await client.channels.fetch(ROLE_CHANNEL_ID);
 
             if (!channel) {
-                console.error(
-                    `❌ ไม่พบห้องลงทะเบียน ID: ${ROLE_CHANNEL_ID}`
-                );
+                console.error(`❌ ไม่พบห้องลงทะเบียน: ${ROLE_CHANNEL_ID}`);
                 return;
             }
 
-            // ==========================================
-            // 🗑️ ลบข้อความเก่า
-            // ==========================================
-
+            // ลบข้อความเก่า
             try {
-                const fetchedMessages = await channel.messages.fetch({
+                const messages = await channel.messages.fetch({
                     limit: 20
                 });
 
-                if (fetchedMessages.size > 0) {
-                    await channel.bulkDelete(
-                        fetchedMessages
-                    ).catch(async () => {
-                        for (const msg of fetchedMessages.values()) {
-                            await msg.delete().catch(() => {});
+                if (messages.size > 0) {
+                    await channel.bulkDelete(messages).catch(async () => {
+                        for (const message of messages.values()) {
+                            await message.delete().catch(() => {});
                         }
                     });
 
-                    console.log(
-                        `🗑️ ลบข้อความเก่า ${fetchedMessages.size} ข้อความ`
-                    );
+                    console.log(`🗑️ ลบข้อความเก่า ${messages.size} ข้อความ`);
                 }
             } catch (error) {
                 console.error(
-                    '❌ ไม่สามารถลบข้อความเก่าได้:',
+                    '❌ ลบข้อความเก่าไม่ได้:',
                     error.message
                 );
             }
 
-            // ==========================================
-            // 🎨 Embed
-            // ==========================================
-
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
-                .setTitle(
-                    `✨ ยินดีต้อนรับสู่ ${channel.guild.name}`
-                )
+                .setTitle(`✨ ยินดีต้อนรับสู่ ${channel.guild.name}`)
                 .setDescription(
                     'ยินดีต้อนรับสมาชิกใหม่ทุกท่านเข้าสู่เซิร์ฟเวอร์ของเราครับ!\n\n' +
-
-                    '📋 **ขั้นตอนการลงทะเบียน & รับยศเกม:**\n\n' +
-
-                    '1️⃣ กดปุ่ม **"ลงทะเบียน / ตั้งชื่อและรับยศ"** ด้านล่าง\n\n' +
-
-                    '2️⃣ กรอก **ชื่อที่ต้องการใช้ในเซิร์ฟเวอร์**\n\n' +
-
-                    '3️⃣ กรอก **Steam ID64 จำนวน 17 หลัก**\n\n' +
-
-                    '4️⃣ ระบบจะตรวจสอบ Steam และสถานะ **VAC** อัตโนมัติ\n\n' +
-
-                    '5️⃣ เลือก **เกมที่ต้องการรับยศ**\n\n' +
-
-                    '6️⃣ ระบบจะเปลี่ยนชื่อและมอบยศของเกมที่เลือกให้โดยอัตโนมัติ\n\n' +
-
+                    '📋 **ขั้นตอนการลงทะเบียน & รับยศเกม**\n\n' +
+                    '1️⃣ กดปุ่ม **ลงทะเบียน / ตั้งชื่อและรับยศ**\n' +
+                    '2️⃣ กรอกชื่อที่ต้องการใช้ในเซิร์ฟเวอร์\n' +
+                    '3️⃣ กรอก Steam ID64 จำนวน 17 หลัก\n' +
+                    '4️⃣ ระบบตรวจสอบ Steam และ VAC อัตโนมัติ\n' +
+                    '5️⃣ เลือกเกมที่ต้องการรับยศ\n' +
+                    '6️⃣ ระบบเปลี่ยนชื่อและมอบยศเกมให้โดยอัตโนมัติ\n\n' +
                     '📌 **ตัวอย่าง Steam ID64**\n' +
                     '`7656119XXXXXXXXXX`\n\n' +
-
-                    '⚠️ **หมายเหตุ:**\n' +
-                    'กรุณากรอก Steam ID64 ให้ถูกต้อง และใช้ชื่อที่สุภาพและเหมาะสมกับชุมชน'
+                    '⚠️ กรุณากรอก Steam ID64 ของบัญชี Steam ของคุณเอง'
                 )
                 .setThumbnail(
                     channel.guild.iconURL({
@@ -94,53 +68,34 @@ module.exports = {
                 .addFields(
                     {
                         name: '🔒 ความปลอดภัย',
-                        value:
-                            'ระบบตรวจสอบ Steam และ VAC อัตโนมัติ',
+                        value: 'ตรวจสอบ Steam และ VAC อัตโนมัติ',
                         inline: true
                     },
                     {
                         name: '🎮 เลือกเกม',
-                        value:
-                            'เลือกเกมเพื่อรับยศที่ตรงกับเกม',
+                        value: 'เลือกเกมเพื่อรับยศ',
                         inline: true
                     },
                     {
                         name: '💎 สิทธิพิเศษ',
-                        value:
-                            'รับยศเกมเพื่อปลดล็อกห้องที่เกี่ยวข้อง',
+                        value: 'รับยศเกมที่เลือก',
                         inline: true
                     }
                 )
                 .setFooter({
-                    text:
-                        `${channel.guild.name} • ระบบจัดการสมาชิกอัตโนมัติ`,
-                    iconURL:
-                        client.user.displayAvatarURL()
+                    text: `${channel.guild.name} • ระบบจัดการสมาชิกอัตโนมัติ`,
+                    iconURL: client.user.displayAvatarURL()
                 })
                 .setTimestamp();
-
-            // ==========================================
-            // 🔘 ปุ่ม
-            // ==========================================
 
             const button = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(
-                            'modal_role_trigger'
-                        )
-                        .setLabel(
-                            'ลงทะเบียน / ตั้งชื่อและรับยศ'
-                        )
-                        .setStyle(
-                            ButtonStyle.Primary
-                        )
+                        .setCustomId('modal_role_trigger')
+                        .setLabel('ลงทะเบียน / ตั้งชื่อและรับยศ')
+                        .setStyle(ButtonStyle.Primary)
                         .setEmoji('🎉')
                 );
-
-            // ==========================================
-            // 📤 ส่ง
-            // ==========================================
 
             await channel.send({
                 embeds: [embed],
@@ -149,23 +104,16 @@ module.exports = {
 
             console.log('=====================================');
             console.log('✅ ระบบลงทะเบียนพร้อมใช้งาน');
-            console.log(
-                `📌 ห้องลงทะเบียน: ${ROLE_CHANNEL_ID}`
-            );
-            console.log(
-                '🎮 ระบบเลือกเกมและรับยศพร้อมใช้งาน'
-            );
-            console.log(
-                '🛡️ ระบบตรวจ Steam / VAC พร้อมใช้งาน'
-            );
+            console.log(`📌 ห้องลงทะเบียน: ${ROLE_CHANNEL_ID}`);
+            console.log('🎮 ระบบเลือกเกมพร้อมใช้งาน');
+            console.log('🛡️ ระบบ Steam / VAC พร้อมใช้งาน');
             console.log('=====================================');
 
         } catch (error) {
             console.error(
-                '❌ เกิดข้อผิดพลาดตอนสร้างระบบลงทะเบียน:',
+                '❌ เกิดข้อผิดพลาดใน ready.js:',
                 error
             );
         }
     }
 };
-```
