@@ -1333,7 +1333,7 @@ module.exports = {
 
                 return await interaction.reply({
                     content:
-                        '❌ ไม่พบพื้นที่นี้แล้ว',
+                        '❌ ไม่พบข้อมูลพื้นที่สำหรับการอัปเดต',
                     ephemeral: true
                 });
             }
@@ -1348,7 +1348,22 @@ module.exports = {
                     location.subDistrict.long
                 );
 
-            await interaction.deferUpdate();
+            if (
+                !Number.isFinite(latitude) ||
+                !Number.isFinite(longitude)
+            ) {
+
+                return await interaction.reply({
+                    content:
+                        '❌ ตำบลนี้ไม่มีพิกัดสำหรับอัปเดตสภาพอากาศ',
+                    ephemeral: true
+                });
+            }
+
+            await interaction.update({
+                content: '🔄 **กำลังอัปเดตสภาพอากาศ...**',
+                components: interaction.message.components
+            });
 
             try {
 
@@ -1364,40 +1379,48 @@ module.exports = {
                         weather
                     );
 
-                await interaction.message.edit({
+                const buttons =
+                    refreshButton(
+                        provinceId,
+                        districtId,
+                        subDistrictId
+                    );
+
+                await interaction.update({
+
+                    content:
+                        '🌦️ **รายงานสภาพอากาศของคุณ (อัปเดตแล้ว)**',
 
                     embeds: [
                         embed
                     ],
 
                     components: [
-                        refreshButton(
-                            provinceId,
-                            districtId,
-                            subDistrictId
-                        )
+                        buttons
                     ]
                 });
 
             } catch (error) {
 
                 console.error(
-                    '❌ Refresh Weather:',
+                    '❌ Weather Refresh Error:',
                     error.message
                 );
 
                 await interaction.followUp({
+
                     content:
-                        '❌ อัปเดตสภาพอากาศไม่ได้',
+                        '❌ ไม่สามารถอัปเดตสภาพอากาศได้ กรุณาลองใหม่อีกครั้ง',
+
                     ephemeral: true
-                }).catch(() => {});
+                });
             }
 
             return;
         }
 
         // ==================================================
-        // เปลี่ยนพื้นที่จาก DM
+        // เปลี่ยนพื้นที่ (เลือกใหม่)
         // ==================================================
 
         if (
@@ -1406,16 +1429,15 @@ module.exports = {
             'weather_choose_again'
         ) {
 
-            return await interaction.reply({
+            return await interaction.update({
 
                 content:
                     '🇹🇭 **เลือกจังหวัดที่ต้องการดูสภาพอากาศ**',
 
                 components:
-                    provinceComponents(0),
-
-                ephemeral: true
+                    provinceComponents(0)
             });
         }
+
     }
 };
