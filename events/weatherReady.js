@@ -51,26 +51,29 @@ module.exports = {
                 return;
             }
 
-            // ลบข้อความเก่าเฉพาะข้อความของบอท
+            // ลบข้อความเก่าของบอททั้งหมดในห้อง (ดึงและวนลบจนกว่าจะไม่เหลือข้อความของบอท)
             try {
-                const messages = await channel.messages.fetch({
-                    limit: 20
-                });
-
-                const botMessages = messages.filter(
-                    message =>
-                        message.author.id === client.user.id
-                );
-
-                for (const message of botMessages.values()) {
-                    await message.delete().catch(() => {});
-                }
-
-                if (botMessages.size > 0) {
-                    console.log(
-                        `🗑️ ลบข้อความ Weather เก่า ${botMessages.size} ข้อความ`
+                let fetchedMessages;
+                do {
+                    fetchedMessages = await channel.messages.fetch({ limit: 100 });
+                    const botMessages = fetchedMessages.filter(
+                        message => message.author.id === client.user.id
                     );
-                }
+
+                    if (botMessages.size === 0) break;
+
+                    for (const message of botMessages.values()) {
+                        await message.delete().catch(() => {});
+                    }
+
+                    console.log(
+                        `🗑️ ลบข้อความ Weather เก่าไป ${botMessages.size} ข้อความ`
+                    );
+                    
+                    // หน่วงเวลาเล็กน้อยกันติด Rate Limit
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } while (fetchedMessages.size > 0);
+
             } catch (error) {
                 console.error(
                     '⚠️ ลบข้อความ Weather เก่าไม่ได้:',
