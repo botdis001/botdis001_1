@@ -21,7 +21,7 @@ const client = new Client({
 // เก็บ client ไว้ให้ Express เรียกใช้งานตอนส่ง DM
 app.set('discordClient', client);
 
-// นำเข้า Router สำหรับรับพิกัดสภาพอากาศ (ปรับ Path ตามตำแหน่งไฟล์ของคุณ)
+// นำเข้า Router สำหรับรับพิกัดสภาพอากาศ
 const weatherLocationRouter = require('./events/weatherLocationServer');
 app.use('/', weatherLocationRouter);
 
@@ -30,9 +30,10 @@ app.listen(PORT, () => {
     console.log(`🌐 Web Server is running on port ${PORT}`);
 });
 
-// โค้ดเดิมสำหรับล็อกอินบอท Discord ของคุณ
+// โค้ดสำหรับล็อกอินบอท Discord
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.login(process.env.TOKEN);
+// ใช้ BOT_TOKEN ให้ตรงกับตัวแปรบน Railway ของคุณ
+client.login(process.env.BOT_TOKEN);
