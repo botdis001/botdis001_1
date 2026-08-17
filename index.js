@@ -25,6 +25,11 @@ const PORT = process.env.PORT || 8080;
 // ให้บริการไฟล์ Static จากโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ✅ เพิ่ม Route หน้าแรก (Root) ให้เปิดหน้า weather.html ทันทีเมื่อเข้าเว็บหลัก
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'weather.html'));
+});
+
 // Endpoint รองรับการรับค่าพิกัดจากหน้าเว็บ weather.html
 app.get('/weather-location', async (req, res) => {
     const { userId, lat, lon } = req.query;
@@ -84,7 +89,7 @@ if (fs.existsSync(foldersPath)) {
     }
 }
 
-// 🔄 โหลดเหตุการณ์ (Events)
+// 🔄 ระบบโหลดเหตุการณ์ (Events)
 const eventsPath = path.join(__dirname, 'events');
 if (fs.existsSync(eventsPath)) {
     const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
@@ -99,7 +104,7 @@ if (fs.existsSync(eventsPath)) {
                 client.on(event.name, (...args) => event.execute(...args));
             }
             console.log(`📂 โหลด Event สำเร็จ: ${file}`);
-        } catch (e) { // ✅ แก้ไขจาก else เป็น catch เรียบร้อยแล้ว
+        } catch (e) { 
             console.error(`❌ โหลดเหตุการณ์ไม่ได้: ${file}`, e.message); 
         }
     }
