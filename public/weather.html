@@ -2,37 +2,38 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>กำลังตรวจสอบตำแหน่ง...</title>
+    <title>กำลังดึงพิกัดสภาพอากาศ...</title>
     <style>
-        body { background-color: #313338; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }
-        .box { background: #2b2d31; padding: 30px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        body { font-family: sans-serif; text-align: center; padding-top: 100px; background: #2f3136; color: white; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>📍 กำลังขอเข้าถึงตำแหน่งของคุณ...</h2>
-        <p>โปรดกด <b>"Allow / อนุญาต"</b> บนเบราว์เซอร์เพื่อรับสภาพอากาศ</p>
-    </div>
-
+    <h2>📍 กำลังตรวจสอบตำแหน่งของคุณ กรุณากด "อนุญาต" (Allow)...</h2>
+    
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('userId');
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    // ส่งพิกัดไปยัง Backend ของบอท
-                    window.location.href = `/weather-location?userId=${userId}&lat=${lat}&lon=${lon}`;
-                },
-                (error) => {
-                    alert('❌ ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาเปิด GPS หรืออนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์');
+        if (!userId) {
+            document.body.innerHTML = `<h2>❌ ไม่พบข้อมูลผู้ใช้ กรุณากลับไปกดปุ่มใหม่ใน Discord</h2>`;
+        } else if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                try {
+                    // ส่งพิกัดและ userId ไปยัง Endpoint ใน index.js
+                    const response = await fetch(`/weather-location?userId=${userId}&lat=${lat}&lon=${lon}`);
+                    const resultText = await response.text();
+                    document.body.innerHTML = resultText;
+                } catch (err) {
+                    document.body.innerHTML = `<h2>❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์บอท</h2>`;
                 }
-            );
+            }, (error) => {
+                document.body.innerHTML = `<h2>❌ กรุณาอนุญาตการเข้าถึงตำแหน่ง (Geolocation) ในเบราว์เซอร์ของคุณเพื่อใช้งาน</h2>`;
+            }, { enableHighAccuracy: true });
         } else {
-            alert('❌ เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง');
+            document.body.innerHTML = `<h2>❌ เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง</h2>`;
         }
     </script>
 </body>
