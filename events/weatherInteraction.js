@@ -9,8 +9,8 @@ const {
     TextInputStyle
 } = require('discord.js');
 
-// URL เว็บของคุณบน Railway
-const WEB_URL ='https://botdis0011-production-c580.up.railway.app';
+// URL เว็บของคุณบน Railway (แก้ไขให้ถูกต้องไม่มีเว้นวรรค)
+const WEB_URL = 'https://botdis0011-production-c580.up.railway.app';
 
 const GEO_URL =
     'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
