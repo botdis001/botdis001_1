@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const express = require('express'); // 🌐 เพิ่ม Express สำหรับเปิดเว็บเซิร์ฟเวอร์
 require('dotenv').config();
 
 const client = new Client({
@@ -17,6 +18,41 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// 🌐 ตั้งค่า Express Web Server สำหรับรองรับหน้าเว็บ Weather HTML
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ให้บริการไฟล์ Static (เช่น ไฟล์ HTML ต่างๆ ที่อยู่ในโฟลเดอร์โปรเจกต์ หรือสร้างโฟลเดอร์ public)
+app.use(express.static(path.join(__dirname)));
+
+// Endpoint รองรับการรับค่าพิกัดจากหน้าเว็บ weather.html
+app.get('/weather-location', async (req, res) => {
+    const { userId, lat, lon } = req.query;
+    
+    if (!userId || !lat || !lon) {
+        return res.send('❌ ข้อมูลไม่ครบถ้วน กรุณาลองใหม่อีกครั้งผ่าน Discord');
+    }
+
+    try {
+        const user = await client.users.fetch(userId);
+        if (user) {
+            // ส่งข้อความแจ้งเตือนหรือข้อมูลสภาพอากาศเข้า DM ของผู้ใช้
+            await user.send(`📍 ได้รับพิกัดของคุณเรียบร้อยแล้ว!\nLatitude: ${lat}\nLongitude: ${lon}\n*(ระบบกำลังประมวลผลสภาพอากาศ...)*`);
+            res.send('<h2>✅ ส่งพิกัดไปยังบอทสำเร็จแล้ว! คุณสามารถปิดหน้านี้และกลับไปดูที่ Discord ได้เลยครับ</h2>');
+        } else {
+            res.send('❌ ไม่พบผู้ใช้งานในระบบ Discord');
+        }
+    } catch (error) {
+        console.error('❌ Error handling location:', error);
+        res.send('❌ เกิดข้อผิดพลาดในการส่งข้อมูลไปยังบอท');
+    }
+});
+
+// เริ่มต้นรัน Express Server
+app.listen(PORT, () => {
+    console.log(`🌐 Web Server กำลังรันอยู่ที่พอร์ต ${PORT}`);
+});
+
 // 🔄 ระบบโหลด Slash Commands (รองรับทั้งวางในโฟลเดอร์ commands/ และในโฟลเดอร์ย่อย)
 const foldersPath = path.join(__dirname, 'commands');
 if (fs.existsSync(foldersPath)) {
@@ -25,7 +61,6 @@ if (fs.existsSync(foldersPath)) {
         const itemPath = path.join(foldersPath, folder);
         
         if (fs.lstatSync(itemPath).isDirectory()) {
-            // กรณีที่เป็นโฟลเดอร์ย่อย
             const commandFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
             for (const file of commandFiles) {
                 try {
@@ -38,7 +73,6 @@ if (fs.existsSync(foldersPath)) {
                 }
             }
         } else if (folder.endsWith('.js')) {
-            // กรณีที่วางไฟล์ .js ไว้ในโฟลเดอร์ commands/ โดยตรง
             try {
                 const cmd = require(itemPath);
                 if (cmd.data && cmd.execute) {
@@ -72,7 +106,7 @@ if (fs.existsSync(eventsPath)) {
     }
 }
 
-// ✅ ระบบดักจับข้อความคำสั่งขึ้นต้นด้วยเครื่องหมายตกใจ (!) เช่น !updatebutton
+// ✅ ระบบดักจับข้อความคำสั่งขึ้นต้นด้วยเครื่องหมายตกใจ (!)
 client.on('messageCreate', async (message) => {
     if (!message.guild || message.author.bot) return;
     
