@@ -5,6 +5,9 @@ const {
     EmbedBuilder
 } = require('discord.js');
 
+const WEATHER_CHANNEL_ID = '1538500010172223558';
+const GEO_URL = 'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
+
 module.exports = {
     name: 'clientReady',
     once: true,
@@ -66,49 +69,99 @@ module.exports = {
         }
 
         // --- 2. ระบบสภาพอากาศ ---
-        const WEATHER_CHANNEL_ID = '1538500010172223558';
-        const WEB_APP_URL = 'https://botdis0011-production.up.railway.app/weather.html';
+        console.log('=====================================');
+        console.log('🌦️ กำลังเริ่มระบบสภาพอากาศ...');
+        console.log('=====================================');
 
         try {
-            const weatherChannel = await client.channels.fetch(WEATHER_CHANNEL_ID).catch(() => null);
-            if (weatherChannel) {
-                const messages = await weatherChannel.messages.fetch({ limit: 10 });
-                const existingWeatherMsg = messages.find(msg => msg.author.id === client.user.id);
+            const response = await fetch(GEO_URL);
 
-                if (!existingWeatherMsg) {
-                    const weatherEmbed = new EmbedBuilder()
-                        .setColor('#3498DB')
-                        .setTitle('🌦️ ระบบตรวจสอบสภาพอากาศประเทศไทย')
-                        .setDescription(
-                            'เลือกวิธีตรวจสอบสภาพอากาศที่คุณต้องการได้เลยครับ:\n\n' +
-                            '📍 **วิธีที่ 1:** กดปุ่ม **"📍 เช็กสภาพอากาศตามตำแหน่งของฉัน"** เพื่อตรวจสอบพิกัดปัจจุบัน\n' +
-                            '🗺️ **วิธีที่ 2:** กดปุ่ม **"🗺️ เลือกจังหวัด / ตำบล"** เพื่อเลือกพื้นที่เอง\n\n' +
-                            '📩 ผลสภาพอากาศจะถูกส่งเข้า **DM ส่วนตัว** ของคุณ'
-                        )
-                        .addFields(
-                            { name: '🌡️ ข้อมูลที่แสดง', value: 'อุณหภูมิ\nความชื้น\nรู้สึกเหมือน\nสภาพอากาศ\nปริมาณฝน\nความเร็วลม', inline: true },
-                            { name: '🌅 ข้อมูลเพิ่มเติม', value: 'พระอาทิตย์ขึ้น\nพระอาทิตย์ตก\nอุณหภูมิสูงสุด\nอุณหภูมิต่ำสุด\nโอกาสฝน', inline: true }
-                        )
-                        .setFooter({ text: `${weatherChannel.guild.name} • ระบบสภาพอากาศ` })
-                        .setTimestamp();
-
-                    const weatherRow = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setLabel('📍 เช็กสภาพอากาศตามตำแหน่งของฉัน')
-                            .setStyle(ButtonStyle.Link)
-                            .setURL(WEB_APP_URL),
-                        new ButtonBuilder()
-                            .setCustomId('weather_start')
-                            .setLabel('🗺️ เลือกจังหวัด / ตำบล')
-                            .setStyle(ButtonStyle.Primary)
-                    );
-
-                    await weatherChannel.send({ embeds: [weatherEmbed], components: [weatherRow] });
-                }
-                console.log('✅ ระบบสภาพอากาศพร้อมใช้งาน');
+            if (!response.ok) {
+                throw new Error(`โหลดข้อมูลพื้นที่ไม่สำเร็จ HTTP ${response.status}`);
             }
+
+            const data = await response.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('ข้อมูลจังหวัดว่าง');
+            }
+
+            console.log(`✅ โหลดข้อมูลประเทศไทยสำเร็จ ${data.length} จังหวัด`);
+
+            const weatherChannel = await client.channels
+                .fetch(WEATHER_CHANNEL_ID)
+                .catch(() => null);
+
+            if (!weatherChannel) {
+                console.error(`❌ ไม่พบห้อง Weather ID: ${WEATHER_CHANNEL_ID}`);
+                return;
+            }
+
+            try {
+                const messages = await weatherChannel.messages.fetch({ limit: 20 });
+                const botMessages = messages.filter(message => message.author.id === client.user.id);
+
+                for (const message of botMessages.values()) {
+                    await message.delete().catch(() => {});
+                }
+
+                if (botMessages.size > 0) {
+                    console.log(`🗑️ ลบข้อความ Weather เก่า ${botMessages.size} ข้อความ`);
+                }
+            } catch (error) {
+                console.error('⚠️ ลบข้อความ Weather เก่าไม่ได้:', error.message);
+            }
+
+            const weatherEmbed = new EmbedBuilder()
+                .setColor('#3498DB')
+                .setTitle('🌦️ ระบบตรวจสอบสภาพอากาศประเทศไทย')
+                .setDescription(
+                    'เลือกวิธีตรวจสอบสภาพอากาศที่คุณต้องการได้เลยครับ:\n\n' +
+                    '📍 **วิธีที่ 1:** กดปุ่ม **"📍 เช็กสภาพอากาศตามตำแหน่งของฉัน"** เพื่อตรวจสอบพิกัดปัจจุบัน\n' +
+                    '🗺️ **วิธีที่ 2:** กดปุ่ม **"🗺️ เลือกจังหวัด / ตำบล"** เพื่อเลือกพื้นที่เอง\n\n' +
+                    '📩 ผลสภาพอากาศจะถูกส่งเข้า **DM ส่วนตัว** ของคุณ'
+                )
+                .addFields(
+                    {
+                        name: '🌡️ ข้อมูลที่แสดง',
+                        value: 'อุณหภูมิ\nความชื้น\nรู้สึกเหมือน\nสภาพอากาศ\nปริมาณฝน\nความเร็วลม',
+                        inline: true
+                    },
+                    {
+                        name: '🌅 ข้อมูลเพิ่มเติม',
+                        value: 'พระอาทิตย์ขึ้น\nพระอาทิตย์ตก\nอุณหภูมิสูงสุด\nอุณหภูมิต่ำสุด\nโอกาสฝน',
+                        inline: true
+                    }
+                )
+                .setFooter({
+                    text: `${weatherChannel.guild.name} • ระบบสภาพอากาศ`
+                })
+                .setTimestamp();
+
+            const weatherRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('weather_my_location')
+                    .setLabel('📍 เช็กสภาพอากาศตามตำแหน่งของฉัน')
+                    .setStyle(ButtonStyle.Success),
+
+                new ButtonBuilder()
+                    .setCustomId('weather_start')
+                    .setLabel('🗺️ เลือกจังหวัด / ตำบล')
+                    .setStyle(ButtonStyle.Primary)
+            );
+
+            await weatherChannel.send({
+                embeds: [weatherEmbed],
+                components: [weatherRow]
+            });
+
+            console.log('=====================================');
+            console.log('✅ ระบบสภาพอากาศพร้อมใช้งาน');
+            console.log(`📌 ห้อง Weather: ${WEATHER_CHANNEL_ID}`);
+            console.log('=====================================');
+
         } catch (error) {
-            console.error('❌ Error ระบบสภาพอากาศ:', error);
+            console.error('❌ Weather Ready Error:', error);
         }
 
         console.log('=====================================');
