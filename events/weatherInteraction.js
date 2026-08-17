@@ -261,16 +261,12 @@ function paginate(items, page) {
 }
 
 // ==================================================
-// เมนูจังหวัด
+// เมนูจังหวัด (รองรับ Pagination หน้าละ 25 จังหวัด)
 // ==================================================
 
 function provinceComponents(page = 0) {
 
-    const result =
-        paginate(
-            geography,
-            page
-        );
+    const result = paginate(geography, page);
 
     const menu =
         new StringSelectMenuBuilder()
@@ -278,7 +274,7 @@ function provinceComponents(page = 0) {
                 `weather_province_${result.page}`
             )
             .setPlaceholder(
-                '🇹🇭 เลือกจังหวัด'
+                `🇹🇭 เลือกจังหวัด (หน้า ${result.page + 1}/${result.totalPages})`
             )
             .addOptions(
                 result.items.map(
@@ -745,7 +741,7 @@ module.exports = {
         }
 
         // ==================================================
-        // เริ่มเลือกจังหวัด
+        // เริ่มเลือกจังหวัด (ปุ่มเลือกพื้นที่)
         // ==================================================
 
         if (
@@ -777,13 +773,11 @@ module.exports = {
             )
         ) {
 
+            const parts =
+                interaction.customId.split('_');
+
             const page =
-                Number(
-                    interaction.customId.replace(
-                        'weather_province_prev_',
-                        ''
-                    )
-                );
+                Number(parts[3]);
 
             return await interaction.update({
 
@@ -808,13 +802,11 @@ module.exports = {
             )
         ) {
 
+            const parts =
+                interaction.customId.split('_');
+
             const page =
-                Number(
-                    interaction.customId.replace(
-                        'weather_province_next_',
-                        ''
-                    )
-                );
+                Number(parts[3]);
 
             return await interaction.update({
 
