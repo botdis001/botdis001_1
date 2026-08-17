@@ -9,6 +9,9 @@ const {
     TextInputStyle
 } = require('discord.js');
 
+// URL เว็บของคุณบน Railway
+const WEB_URL = 'https://botdis0011-production-c580.up.railway.app';
+
 const GEO_URL =
     'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
 
@@ -282,33 +285,23 @@ module.exports = {
             return;
         }
 
-        // ปุ่ม 1: เช็กสภาพอากาศตามตำแหน่ง (เปิด Modal ให้ใส่พิกัด Lat, Long)
+        // ปุ่ม 1: เช็กสภาพอากาศตามตำแหน่ง (เปลี่ยนเป็น Link Button พาไปเปิดเว็บพร้อมส่ง userId อัตโนมัติ)
         if (interaction.isButton() && interaction.customId === 'weather_my_location') {
-            const modal = new ModalBuilder()
-                .setCustomId('weather_location_modal')
-                .setTitle('📍 เช็กสภาพอากาศตามพิกัด');
-
-            const latInput = new TextInputBuilder()
-                .setCustomId('latitude_input')
-                .setLabel('ละติจูด (Latitude เช่น 13.7563)')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-            const longInput = new TextInputBuilder()
-                .setCustomId('longitude_input')
-                .setLabel('ลองจิจูด (Longitude เช่น 100.5018)')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(latInput),
-                new ActionRowBuilder().addComponents(longInput)
+            const webLinkRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('📍 เปิดเว็บเพื่อเช็กพิกัดสภาพอากาศ')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(`${WEB_URL}/?userId=${interaction.user.id}`)
             );
 
-            return await interaction.showModal(modal);
+            return await interaction.reply({
+                content: '🌐 **กรุณากลุ่มปุ่มด้านล่างเพื่ออนุญาตตำแหน่งผ่านเว็บไซต์ครับ:**',
+                components: [webLinkRow],
+                ephemeral: true
+            });
         }
 
-        // รับค่าพิกัดจาก Modal
+        // รับค่าพิกัดจาก Modal (เผื่อยังใช้งานส่วนอื่นอยู่)
         if (interaction.isModalSubmit() && interaction.customId === 'weather_location_modal') {
             await interaction.deferReply({ ephemeral: true });
 
