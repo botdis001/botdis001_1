@@ -7,6 +7,9 @@ const {
 
 const WEATHER_CHANNEL_ID = '1538500010172223558';
 
+// เปลี่ยน URL นี้เป็นลิงก์เว็บไซต์ของคุณที่รันหน้าเว็บ weather.html อยู่ (เช่น https://yourdomain.com/weather.html)
+const WEB_APP_URL = 'https://โดเมนเว็บของคุณ.com/weather.html';
+
 const GEO_URL =
     'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
 
@@ -118,26 +121,14 @@ module.exports = {
             const row = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(
-                            'weather_my_location'
-                        )
-                        .setLabel(
-                            '📍 เช็กสภาพอากาศตามตำแหน่งของฉัน'
-                        )
-                        .setStyle(
-                            ButtonStyle.Success
-                        ),
+                        .setLabel('📍 เช็กสภาพอากาศตามตำแหน่งของฉัน')
+                        .setStyle(ButtonStyle.Link)
+                        .setURL(WEB_APP_URL),
 
                     new ButtonBuilder()
-                        .setCustomId(
-                            'weather_start'
-                        )
-                        .setLabel(
-                            '🗺️ เลือกจังหวัด / ตำบล'
-                        )
-                        .setStyle(
-                            ButtonStyle.Primary
-                        )
+                        .setCustomId('weather_start')
+                        .setLabel('🗺️ เลือกจังหวัด / ตำบล')
+                        .setStyle(ButtonStyle.Primary)
                 );
 
             await channel.send({
