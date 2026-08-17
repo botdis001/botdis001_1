@@ -20,7 +20,6 @@ module.exports = {
         console.log('=====================================');
 
         try {
-            // ตรวจสอบ API พื้นที่ก่อน
             const response = await fetch(GEO_URL);
 
             if (!response.ok) {
@@ -39,7 +38,6 @@ module.exports = {
                 `✅ โหลดข้อมูลประเทศไทยสำเร็จ ${data.length} จังหวัด`
             );
 
-            // ดึงห้อง
             const channel = await client.channels
                 .fetch(WEATHER_CHANNEL_ID)
                 .catch(() => null);
@@ -51,29 +49,25 @@ module.exports = {
                 return;
             }
 
-            // ลบข้อความเก่าของบอททั้งหมดในห้อง (ดึงและวนลบจนกว่าจะไม่เหลือข้อความของบอท)
             try {
-                let fetchedMessages;
-                do {
-                    fetchedMessages = await channel.messages.fetch({ limit: 100 });
-                    const botMessages = fetchedMessages.filter(
-                        message => message.author.id === client.user.id
-                    );
+                const messages = await channel.messages.fetch({
+                    limit: 20
+                });
 
-                    if (botMessages.size === 0) break;
+                const botMessages = messages.filter(
+                    message =>
+                        message.author.id === client.user.id
+                );
 
-                    for (const message of botMessages.values()) {
-                        await message.delete().catch(() => {});
-                    }
+                for (const message of botMessages.values()) {
+                    await message.delete().catch(() => {});
+                }
 
+                if (botMessages.size > 0) {
                     console.log(
-                        `🗑️ ลบข้อความ Weather เก่าไป ${botMessages.size} ข้อความ`
+                        `🗑️ ลบข้อความ Weather เก่า ${botMessages.size} ข้อความ`
                     );
-                    
-                    // หน่วงเวลาเล็กน้อยกันติด Rate Limit
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } while (fetchedMessages.size > 0);
-
+                }
             } catch (error) {
                 console.error(
                     '⚠️ ลบข้อความ Weather เก่าไม่ได้:',
@@ -87,10 +81,10 @@ module.exports = {
                     '🌦️ ระบบตรวจสอบสภาพอากาศประเทศไทย'
                 )
                 .setDescription(
-                    'เลือกพื้นที่ที่ต้องการดูสภาพอากาศได้เลยครับ\n\n' +
-                    '📍 **จังหวัด → อำเภอ → ตำบล**\n' +
-                    '📩 ผลสภาพอากาศจะถูกส่งเข้า **DM ส่วนตัว** ของคุณ\n\n' +
-                    '🔄 สามารถกดอัปเดตข้อมูลสภาพอากาศได้ภายหลัง'
+                    'เลือกวิธีตรวจสอบสภาพอากาศที่คุณต้องการได้เลยครับ:\n\n' +
+                    '📍 **วิธีที่ 1:** กดปุ่ม **"📍 เช็กสภาพอากาศตามตำแหน่งของฉัน"** เพื่อตรวจสอบพิกัดปัจจุบัน\n' +
+                    '🗺️ **วิธีที่ 2:** กดปุ่ม **"🗺️ เลือกจังหวัด / ตำบล"** เพื่อเลือกพื้นที่เอง\n\n' +
+                    '📩 ผลสภาพอากาศจะถูกส่งเข้า **DM ส่วนตัว** ของคุณ'
                 )
                 .addFields(
                     {
@@ -125,10 +119,21 @@ module.exports = {
                 .addComponents(
                     new ButtonBuilder()
                         .setCustomId(
+                            'weather_my_location'
+                        )
+                        .setLabel(
+                            '📍 เช็กสภาพอากาศตามตำแหน่งของฉัน'
+                        )
+                        .setStyle(
+                            ButtonStyle.Success
+                        ),
+
+                    new ButtonBuilder()
+                        .setCustomId(
                             'weather_start'
                         )
                         .setLabel(
-                            '🌦️ เลือกพื้นที่ดูสภาพอากาศ'
+                            '🗺️ เลือกจังหวัด / ตำบล'
                         )
                         .setStyle(
                             ButtonStyle.Primary
@@ -144,9 +149,6 @@ module.exports = {
             console.log('✅ ระบบสภาพอากาศพร้อมใช้งาน');
             console.log(
                 `📌 ห้อง Weather: ${WEATHER_CHANNEL_ID}`
-            );
-            console.log(
-                '📩 ผลลัพธ์ส่งเข้า DM ของผู้ใช้'
             );
             console.log('=====================================');
 
