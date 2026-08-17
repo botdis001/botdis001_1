@@ -99,7 +99,7 @@ if (fs.existsSync(eventsPath)) {
                 client.on(event.name, (...args) => event.execute(...args));
             }
             console.log(`📂 โหลด Event สำเร็จ: ${file}`);
-        } else (e) { 
+        } catch (e) { // ✅ แก้ไขจาก else เป็น catch เรียบร้อยแล้ว
             console.error(`❌ โหลดเหตุการณ์ไม่ได้: ${file}`, e.message); 
         }
     }
