@@ -1,13 +1,13 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const express = require('express'); // 🌐 เพิ่ม Express สำหรับเปิดเว็บเซิร์ฟเวอร์
+const express = require('express');
 require('dotenv').config();
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers, // สำคัญมากสำหรับระบบต้อนรับและยศ
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildVoiceStates,
@@ -20,9 +20,9 @@ client.commands = new Collection();
 
 // 🌐 ตั้งค่า Express Web Server สำหรับรองรับหน้าเว็บ Weather HTML
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-// ให้บริการไฟล์ Static จากโฟลเดอร์ public (ที่มีไฟล์ weather.html อยู่)
+// ให้บริการไฟล์ Static จากโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Endpoint รองรับการรับค่าพิกัดจากหน้าเว็บ weather.html
@@ -36,7 +36,6 @@ app.get('/weather-location', async (req, res) => {
     try {
         const user = await client.users.fetch(userId);
         if (user) {
-            // ส่งข้อความแจ้งเตือนหรือข้อมูลสภาพอากาศเข้า DM ของผู้ใช้
             await user.send(`📍 ได้รับพิกัดของคุณเรียบร้อยแล้ว!\nLatitude: ${lat}\nLongitude: ${lon}\n*(ระบบกำลังประมวลผลสภาพอากาศ...)*`);
             res.send('<h2>✅ ส่งพิกัดไปยังบอทสำเร็จแล้ว! คุณสามารถปิดหน้านี้และกลับไปดูที่ Discord ได้เลยครับ</h2>');
         } else {
@@ -48,12 +47,12 @@ app.get('/weather-location', async (req, res) => {
     }
 });
 
-// เริ่มต้นรัน Express Server
-app.listen(PORT, () => {
+// เริ่มต้นรัน Express Server โดยใช้พอร์ตจาก Railway หรือ 8080
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🌐 Web Server กำลังรันอยู่ที่พอร์ต ${PORT}`);
 });
 
-// 🔄 ระบบโหลด Slash Commands (รองรับทั้งวางในโฟลเดอร์ commands/ และในโฟลเดอร์ย่อย)
+// 🔄 ระบบโหลด Slash Commands
 const foldersPath = path.join(__dirname, 'commands');
 if (fs.existsSync(foldersPath)) {
     const commandFolders = fs.readdirSync(foldersPath);
@@ -85,7 +84,7 @@ if (fs.existsSync(foldersPath)) {
     }
 }
 
-// 🔄 โหลดเหตุการณ์ (Events) อัตโนมัติจากโฟลเดอร์ events
+// 🔄 โหลดเหตุการณ์ (Events)
 const eventsPath = path.join(__dirname, 'events');
 if (fs.existsSync(eventsPath)) {
     const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
@@ -100,50 +99,11 @@ if (fs.existsSync(eventsPath)) {
                 client.on(event.name, (...args) => event.execute(...args));
             }
             console.log(`📂 โหลด Event สำเร็จ: ${file}`);
-        } catch (e) { 
+        } else (e) { 
             console.error(`❌ โหลดเหตุการณ์ไม่ได้: ${file}`, e.message); 
         }
     }
 }
-
-// ✅ ระบบดักจับข้อความคำสั่งขึ้นต้นด้วยเครื่องหมายตกใจ (!)
-client.on('messageCreate', async (message) => {
-    if (!message.guild || message.author.bot) return;
-    
-    const prefix = '!';
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
-
-    const foldersPath = path.join(__dirname, 'commands');
-    const commandFolders = fs.readdirSync(foldersPath);
-    for (const folder of commandFolders) {
-        const itemPath = path.join(foldersPath, folder);
-        if (fs.lstatSync(itemPath).isDirectory()) {
-            const commandFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
-            for (const file of commandFiles) {
-                try {
-                    const cmd = require(path.join(itemPath, file));
-                    if (cmd.name === commandName && typeof cmd.execute === 'function') {
-                        await cmd.execute(message, args);
-                    }
-                } catch (error) {
-                    console.error(`❌ Error executing command ${file}:`, error);
-                }
-            }
-        } else if (folder.endsWith('.js')) {
-            try {
-                const cmd = require(itemPath);
-                if (cmd.name === commandName && typeof cmd.execute === 'function') {
-                    await cmd.execute(message, args);
-                }
-            } catch (error) {
-                console.error(`❌ Error executing command ${folder}:`, error);
-            }
-        }
-    }
-});
 
 client.on('error', e => console.error('❌ Error:', e.message));
 process.on('unhandledRejection', e => console.error('❌ Unhandled:', e.message));
