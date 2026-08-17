@@ -144,6 +144,23 @@ module.exports = {
         }
 
         // ==========================================
+        // กดปุ่มเช็กสภาพอากาศตามตำแหน่งของฉัน (ส่งลิงก์ส่วนตัวพร้อมแนบ userId)
+        // ==========================================
+
+        if (
+            interaction.isButton() &&
+            interaction.customId === 'weather_location_link'
+        ) {
+            const userId = interaction.user.id;
+            const userWeatherUrl = `https://botdis0011-production.up.railway.app/weather.html?userId=${userId}`;
+
+            return await interaction.reply({
+                content: `📍 กรุณาคลิกที่ลิงก์ส่วนตัวด้านล่างเพื่อตรวจสอบสภาพอากาศของคุณ:\n👉 ${userWeatherUrl}`,
+                ephemeral: true
+            });
+        }
+
+        // ==========================================
         // กดปุ่มลงทะเบียน Steam
         // ==========================================
 
