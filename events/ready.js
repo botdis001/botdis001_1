@@ -6,6 +6,7 @@ const {
 } = require('discord.js');
 
 const WEATHER_CHANNEL_ID = '1538500010172223558';
+const WEB_APP_URL = 'https://botdis0011-production.up.railway.app/weather.html';
 const GEO_URL = 'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
 
 module.exports = {
@@ -140,9 +141,9 @@ module.exports = {
 
             const weatherRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
-                    .setCustomId('weather_my_location')
                     .setLabel('📍 เช็กสภาพอากาศตามตำแหน่งของฉัน')
-                    .setStyle(ButtonStyle.Success),
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(WEB_APP_URL), // เปลี่ยนกลับเป็น Link เพื่อให้เปิดเว็บดึงพิกัด GPS ได้
 
                 new ButtonBuilder()
                     .setCustomId('weather_start')
