@@ -22,8 +22,8 @@ client.commands = new Collection();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ให้บริการไฟล์ Static (เช่น ไฟล์ HTML ต่างๆ ที่อยู่ในโฟลเดอร์โปรเจกต์ หรือสร้างโฟลเดอร์ public)
-app.use(express.static(path.join(__dirname)));
+// ให้บริการไฟล์ Static จากโฟลเดอร์ public (ที่มีไฟล์ weather.html อยู่)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Endpoint รองรับการรับค่าพิกัดจากหน้าเว็บ weather.html
 app.get('/weather-location', async (req, res) => {
