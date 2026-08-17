@@ -1,14 +1,7 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const express = require('express');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ตั้งค่า Express ให้เสิร์ฟไฟล์ Static จากโฟลเดอร์ public
-app.use(express.static(path.join(__dirname, 'public')));
 
 const client = new Client({
     intents: [
@@ -19,36 +12,41 @@ const client = new Client({
     ]
 });
 
-// เก็บ client ไว้ให้ Express เรียกใช้งานตอนส่ง DM
-app.set('discordClient', client);
+// สร้าง Collection สำหรับเก็บ Slash Commands
+client.commands = new Collection();
 
-// นำเข้า Router สำหรับรับพิกัดสภาพอากาศ
-const weatherLocationRouter = require('./events/weatherLocationServer');
-app.use('/', weatherLocationRouter);
-
-// ระบบโหลด Events อัตโนมัติจากโฟลเดอร์ events
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const event = require(filePath);
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args));
+// โหลดคำสั่ง Slash Commands อัตโนมัติจากโฟลเดอร์ commands
+const commandsPath = path.join(__dirname, 'commands');
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('data' in command && 'execute' in command) {
+            client.commands.set(command.data.name, command, command);
+        }
     }
 }
 
-// รัน Express Server
-app.listen(PORT, () => {
-    console.log(`🌐 Web Server is running on port ${PORT}`);
-});
+// โหลด Events อัตโนมัติจากโฟลเดอร์ events
+const eventsPath = path.join(__dirname, 'events');
+if (fs.existsSync(eventsPath)) {
+    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+    for (const file of eventFiles) {
+        const filePath = path.join(eventsPath, file);
+        const event = require(filePath);
+        if (event.once) {
+            client.once(event.name, (...args) => event.execute(...args));
+        } else {
+            client.on(event.name, (...args) => event.execute(...args));
+        }
+    }
+}
 
-// ใช้ clientReady ตามมาตรฐานใหม่ของ Discord.js เพื่อแก้ Warning
+// แจ้งเตือนเมื่อบอทพร้อมใช้งาน
 client.once('clientReady', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// ล็อกอินบอท Discord โดยใช้ BOT_TOKEN บน Railway
+// ล็อกอินเข้าสู่ระบบ Discord
 client.login(process.env.BOT_TOKEN);
