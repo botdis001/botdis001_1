@@ -1,7 +1,6 @@
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction) {
-        // จัดการกรณีผู้ใช้กำลังพิมพ์ค้นหา (Autocomplete)
         if (interaction.isAutocomplete()) {
             const command = interaction.client.commands.get(interaction.commandName);
             if (!command || !command.autocomplete) return;
@@ -14,7 +13,6 @@ module.exports = {
             return;
         }
 
-        // จัดการกรณีผู้ใช้ส่งคำสั่ง Slash Command (/weather)
         if (interaction.isChatInputCommand()) {
             const command = interaction.client.commands.get(interaction.commandName);
             if (!command) return;
@@ -37,7 +35,5 @@ module.exports = {
             }
             return;
         }
-
-        // ถ้ามีการใช้ปุ่ม (Button) หรือเมนูอื่นๆ เพิ่มเติมในอนาคต สามารถเขียนดักจับต่อตรงนี้ได้ครับ
     }
 };
