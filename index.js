@@ -14,20 +14,20 @@ const client = new Client({
 
 // สร้าง Collection สำหรับเก็บ Slash Commands
 client.commands = new Collection();
-
-// โหลดคำสั่ง Slash Commands อัตโนมัติ (รองรับทั้งไฟล์ตรงและโฟลเดอร์ย่อย)
 const commandsArray = [];
-const foldersPath = path.join(__dirname, 'commands');
 
-if (fs.existsSync(foldersPath)) {
-    const commandFolders = fs.readdirSync(foldersPath);
+// โหลดคำสั่ง Slash Commands แบบครอบคลุม (รองรับทั้งไฟล์ตรงและโฟลเดอร์ย่อย)
+const commandsPath = path.join(__dirname, 'commands');
+if (fs.existsSync(commandsPath)) {
+    const items = fs.readdirSync(commandsPath);
 
-    for (const folder of commandFolders) {
-        const itemPath = path.join(foldersPath, folder);
-        
-        if (fs.lstatSync(itemPath).isDirectory()) {
-            const commandFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
-            for (const file of commandFiles) {
+    for (const item of items) {
+        const itemPath = path.join(commandsPath, item);
+        const stat = fs.statSync(itemPath);
+
+        if (stat.isDirectory()) {
+            const subFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
+            for (const file of subFiles) {
                 const filePath = path.join(itemPath, file);
                 const command = require(filePath);
                 if ('data' in command && 'execute' in command) {
@@ -35,9 +35,8 @@ if (fs.existsSync(foldersPath)) {
                     commandsArray.push(command.data.toJSON());
                 }
             }
-        } else if (folder.endsWith('.js')) {
-            const filePath = path.join(foldersPath, folder);
-            const command = require(filePath);
+        } else if (item.endsWith('.js')) {
+            const command = require(itemPath);
             if ('data' in command && 'execute' in command) {
                 client.commands.set(command.data.name, command);
                 commandsArray.push(command.data.toJSON());
