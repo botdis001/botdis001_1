@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -15,15 +15,33 @@ const client = new Client({
 // สร้าง Collection สำหรับเก็บ Slash Commands
 client.commands = new Collection();
 
-// โหลดคำสั่ง Slash Commands อัตโนมัติจากโฟลเดอร์ commands
-const commandsPath = path.join(__dirname, 'commands');
-if (fs.existsSync(commandsPath)) {
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-    for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
-        const command = require(filePath);
-        if ('data' in command && 'execute' in command) {
-            client.commands.set(command.data.name, command, command);
+// โหลดคำสั่ง Slash Commands อัตโนมัติ (รองรับทั้งไฟล์ตรงและโฟลเดอร์ย่อย)
+const commandsArray = [];
+const foldersPath = path.join(__dirname, 'commands');
+
+if (fs.existsSync(foldersPath)) {
+    const commandFolders = fs.readdirSync(foldersPath);
+
+    for (const folder of commandFolders) {
+        const itemPath = path.join(foldersPath, folder);
+        
+        if (fs.lstatSync(itemPath).isDirectory()) {
+            const commandFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
+            for (const file of commandFiles) {
+                const filePath = path.join(itemPath, file);
+                const command = require(filePath);
+                if ('data' in command && 'execute' in command) {
+                    client.commands.set(command.data.name, command);
+                    commandsArray.push(command.data.toJSON());
+                }
+            }
+        } else if (folder.endsWith('.js')) {
+            const filePath = path.join(foldersPath, folder);
+            const command = require(filePath);
+            if ('data' in command && 'execute' in command) {
+                client.commands.set(command.data.name, command);
+                commandsArray.push(command.data.toJSON());
+            }
         }
     }
 }
@@ -43,9 +61,23 @@ if (fs.existsSync(eventsPath)) {
     }
 }
 
-// แจ้งเตือนเมื่อบอทพร้อมใช้งาน
-client.once('clientReady', () => {
+// แจ้งเตือนเมื่อบอทพร้อมใช้งาน และทำการลงทะเบียน Slash Commands อัตโนมัติ
+client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
+
+    try {
+        console.log(`🔄 กำลังลงทะเบียนคำสั่ง ${commandsArray.length} คำสั่ง...`);
+        const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
+
+        await rest.put(
+            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+            { body: commandsArray }
+        );
+
+        console.log('✅ ลงทะเบียนคำสั่งสำเร็จเรียบร้อย!');
+    } catch (error) {
+        console.error('❌ เกิดข้อผิดพลาดในการลงทะเบียนคำสั่ง:', error);
+    }
 });
 
 // ล็อกอินเข้าสู่ระบบ Discord
