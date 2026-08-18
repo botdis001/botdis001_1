@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-// รายชื่อจังหวัดและพิกัดตัวอย่างทั่วไทย
 const thailandLocations = [
     { name: 'กรุงเทพมหานคร (Bangkok)', lat: 13.7563, lon: 100.5018 },
     { name: 'เชียงใหม่ (Chiang Mai)', lat: 18.7883, lon: 98.9853 },
@@ -24,7 +23,7 @@ module.exports = {
         .setDescription('ตรวจสอบสภาพอากาศในประเทศไทย พร้อมระบบค้นหาอัจฉริยะ')
         .addStringOption(option =>
             option.setName('location')
-                .setDescription('พิมพ์ชื่อจังหวัดหรืออำเภอ (พิมพ์ผิดนิดหน่อยระบบก็ช่วยหาให้)')
+                .setDescription('พิมพ์ชื่อจังหวัดหรืออำเภอ')
                 .setRequired(true)
                 .setAutocomplete(true)),
 
