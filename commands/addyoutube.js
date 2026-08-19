@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const youtubeNotifier = require('../../events/youtubeNotifier');
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('addyoutube')
