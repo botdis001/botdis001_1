@@ -1,7 +1,7 @@
-const { EmbedBuilder } = require('discord.js');
+const { Events, EmbedBuilder } = require('discord.js');
 
 module.exports = {
-    name: 'guildMemberAdd',
+    name: Events.GuildMemberAdd,
     async execute(member) {
         const WELCOME_CHANNEL_ID = '1205000338382524416'; 
 
