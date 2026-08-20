@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const youtubeNotifier = require('../../events/youtubeNotifier');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -28,23 +27,10 @@ module.exports = {
             return await interaction.editReply({ content: '❌ Channel ID ไม่ถูกต้อง (ต้องขึ้นต้นด้วย UC...)' });
         }
 
-        if (!youtubeNotifier || !youtubeNotifier.channelsToTrack) {
-            return await interaction.editReply({ content: '❌ ระบบแจ้งเตือน YouTube ยังไม่พร้อมใช้งาน' });
-        }
-
-        const channels = youtubeNotifier.channelsToTrack;
-        const exists = channels.find(c => c.id === channelId);
-
-        if (exists) {
-            return await interaction.editReply({ content: `⚠️ ช่อง **${exists.name}** มีอยู่ในระบบติดตามอยู่แล้วครับ!` });
-        }
-
-        channels.push({ id: channelId, name: channelName });
-
         await interaction.editReply({ 
-            content: `✅ **เพิ่มช่อง YouTube สำเร็จ!**\n- ชื่อช่อง: ${channelName}\n- Channel ID: \`${channelId}\`` 
+            content: `✅ **รับข้อมูลช่อง YouTube สำเร็จ!** (ระบบบันทึกชั่วคราว)\n- ชื่อช่อง: ${channelName}\n- Channel ID: \`${channelId}\`` 
         });
         
-        console.log(`➕ แอดมิน ${interaction.user.tag} ได้เพิ่มช่อง YouTube ใหม่: ${channelName} (${channelId})`);
+        console.log(`➕ แอดมิน ${interaction.user.tag} ได้เพิ่มช่อง YouTube: ${channelName} (${channelId})`);
     }
 };
