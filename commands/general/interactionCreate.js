@@ -3,6 +3,11 @@ const { Events } = require('discord.js');
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
+        // เช็กว่าเป็นปุ่มหรือคำสั่งอะไร แล้วพิมพ์ดูใน Console ของ Railway
+        if (interaction.isButton()) {
+            console.log(`🔘 มีคนกดปุ่ม Custom ID: "${interaction.customId}"`);
+        }
+
         // เช็กว่าเป็นเหตุการณ์การกดปุ่ม (Button) หรือไม่
         if (!interaction.isButton()) return;
 
