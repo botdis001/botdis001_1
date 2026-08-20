@@ -6,8 +6,10 @@ require('dotenv').config();
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessages,      // จำเป็นสำหรับการอ่านข้อความ
+        GatewayIntentBits.MessageContent,     // จำเป็นสำหรับการอ่านเนื้อหาในข้อความ
+        GatewayIntentBits.GuildMembers,       // จำเป็นสำหรับระบบสมาชิกเข้า-ออก
+        GatewayIntentBits.GuildVoiceStates,   // จำเป็นสำหรับระบบ Log ห้องเสียง
         GatewayIntentBits.DirectMessages
     ]
 });
