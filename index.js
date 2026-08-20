@@ -45,17 +45,33 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// โหลด Events อัตโนมัติจากโฟลเดอร์ events
+// โหลด Events อัตโนมัติจากโฟลเดอร์ events (รองรับทั้งไฟล์ตรงและโฟลเดอร์ย่อย)
 const eventsPath = path.join(__dirname, 'events');
 if (fs.existsSync(eventsPath)) {
-    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-    for (const file of eventFiles) {
-        const filePath = path.join(eventsPath, file);
-        const event = require(filePath);
-        if (event.once) {
-            client.once(event.name, (...args) => event.execute(...args));
-        } else {
-            client.on(event.name, (...args) => event.execute(...args));
+    const eventItems = fs.readdirSync(eventsPath);
+
+    for (const item of eventItems) {
+        const itemPath = path.join(eventsPath, item);
+        const stat = fs.statSync(itemPath);
+
+        if (stat.isDirectory()) {
+            const subEventFiles = fs.readdirSync(itemPath).filter(file => file.endsWith('.js'));
+            for (const file of subEventFiles) {
+                const filePath = path.join(itemPath, file);
+                const event = require(filePath);
+                if (event.once) {
+                    client.once(event.name, (...args) => event.execute(...args));
+                } else {
+                    client.on(event.name, (...args) => event.execute(...args));
+                }
+            }
+        } else if (item.endsWith('.js')) {
+            const event = require(itemPath);
+            if (event.once) {
+                client.once(event.name, (...args) => event.execute(...args));
+            } else {
+                client.on(event.name, (...args) => event.execute(...args));
+            }
         }
     }
 }
