@@ -1,39 +1,37 @@
+const { Events } = require('discord.js');
+
 module.exports = {
-    name: 'interactionCreate',
+    name: Events.InteractionCreate,
     async execute(interaction) {
-        if (interaction.isAutocomplete()) {
-            const command = interaction.client.commands.get(interaction.commandName);
-            if (!command || !command.autocomplete) return;
+        if (!interaction.isButton()) return;
 
-            try {
-                await command.autocomplete(interaction);
-            } catch (error) {
-                console.error('Error handling autocomplete:', error);
+        // บรรทัดนี้จะช่วยปริ้นท์ชื่อปุ่มที่ถูกกดโชว์ใน Console ของ Railway ทันทีที่คุณกด
+        console.log(`🔘 มีคนกดปุ่ม Custom ID: "${interaction.customId}"`);
+
+        // ถ้าปุ่มขึ้นต้นด้วย role_toggle_ ให้ทำงานแจกยศ
+        if (interaction.customId.startsWith('role_toggle_')) {
+            await interaction.deferReply({ ephemeral: true });
+
+            const roleId = interaction.customId.split('_')[2];
+            const member = interaction.member;
+            const role = interaction.guild.roles.cache.get(roleId);
+
+            if (!role) {
+                return await interaction.editReply({ content: '❌ ไม่พบยศนี้ในเซิร์ฟเวอร์' });
             }
-            return;
-        }
-
-        if (interaction.isChatInputCommand()) {
-            const command = interaction.client.commands.get(interaction.commandName);
-            if (!command) return;
 
             try {
-                await command.execute(interaction);
-            } catch (error) {
-                console.error('Error executing command:', error);
-                
-                const errorMessage = { 
-                    content: '❌ เกิดข้อผิดพลาดบางประการในการรันคำสั่งนี้ กรุณาลองใหม่อีกครั้ง', 
-                    ephemeral: true 
-                };
-
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp(errorMessage).catch(() => {});
+                if (member.roles.cache.has(roleId)) {
+                    await member.roles.remove(roleId);
+                    await interaction.editReply({ content: `✅ ถอดยศ **${role.name}** ออกเรียบร้อยแล้วครับ` });
                 } else {
-                    await interaction.reply(errorMessage).catch(() => {});
+                    await member.roles.add(roleId);
+                    await interaction.editReply({ content: `🎉 รับยศ **${role.name}** เรียบร้อยแล้วครับ!` });
                 }
+            } catch (error) {
+                console.error(error);
+                await interaction.editReply({ content: '❌ เกิดข้อผิดพลาดในการจัดการยศ' });
             }
-            return;
         }
-    }
+    },
 };
