@@ -1,9 +1,9 @@
-const { EmbedBuilder } = require('discord.js');
+const { Events } = require('discord.js');
 
 module.exports = {
-    name: 'ready',
+    name: Events.ClientReady,
     once: true,
-    async execute(client) {
+    execute(client) {
         console.log('=====================================');
         console.log('🚀 ระบบ Log (รองรับชื่อเล่นในเซิร์ฟเวอร์ & ID) พร้อมทำงาน');
         console.log('=====================================');
