@@ -1,8 +1,10 @@
+const { Events } = require('discord.js');
+
 module.exports = {
     name: 'ready',
     once: true,
     async execute(client) {
-        // 📌 อัปเดตเป็นไอดีห้องเสียงใหม่ของพี่เบิร์ดเรียบร้อยครับ
+        // 📌 อัปเดตเป็นไอดีห้องเสียงใหม่เรียบร้อยครับ
         const CHANNEL_ID = '1526811651607629834'; 
 
         console.log('✅ ระบบแสดง วัน-เวลา ในห้องเสียง (Voice Channel) เริ่มทำงานแล้ว!');
