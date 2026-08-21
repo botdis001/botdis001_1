@@ -78,8 +78,8 @@ if (fs.existsSync(eventsPath)) {
     }
 }
 
-// แจ้งเตือนเมื่อบอทพร้อมใช้งาน และทำการลงทะเบียน Slash Commands อัตโนมัติ
-client.once('clientReady', async () => {
+// แจ้งเตือนเมื่อบอทพร้อมใช้งาน และทำการลงทะเบียน Slash Commands อัตโนมัติ (แก้ไขจาก clientReady เป็น ready)
+client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
     try {
