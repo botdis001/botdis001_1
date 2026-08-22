@@ -27,9 +27,8 @@ module.exports = {
             return;
         }
 
-        // 2. จัดการกรณีที่เป็น Button Interaction (ระบบกดรับยศของคุณ)
+        // 2. จัดการกรณีที่เป็น Button Interaction (ระบบกดรับยศ)
         if (interaction.isButton()) {
-            // บรรทัดนี้จะช่วยปริ้นท์ชื่อปุ่มที่ถูกกดโชว์ใน Console ทันทีที่คุณกด
             console.log(`🔘 มีคนกดปุ่ม Custom ID: "${interaction.customId}"`);
 
             // ถ้าปุ่มขึ้นต้นด้วย role_toggle_ ให้ทำงานแจกยศ
