@@ -6,35 +6,26 @@ module.exports = {
         // 1. จัดการกรณีที่เป็น Slash Commands
         if (interaction.isChatInputCommand()) {
             const command = interaction.client.commands.get(interaction.commandName);
-
-            if (!command) {
-                console.error(`❌ ไม่พบคำสั่งที่ตรงกับชื่อ: ${interaction.commandName}`);
-                return;
-            }
+            if (!command) return;
 
             try {
                 await command.execute(interaction);
             } catch (error) {
-                console.error(`❌ เกิดข้อผิดพลาดขณะรันคำสั่ง ${interaction.commandName}:`, error);
-                const errorMessage = { content: '❌ เกิดข้อผิดพลาดบางประการขณะรันคำสั่งนี้!', ephemeral: true };
-                
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp(errorMessage);
-                } else {
-                    await interaction.reply(errorMessage);
+                console.error(error);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ content: '❌ เกิดข้อผิดพลาดในการรันคำสั่ง', ephemeral: true });
                 }
             }
             return;
         }
 
-        // 2. จัดการกรณีที่เป็น Button Interaction (กดปุ่ม)
+        // 2. จัดการกรณีที่มีการกดปุ่ม (Button)
         if (interaction.isButton()) {
             console.log(`🔘 มีคนกดปุ่ม Custom ID: "${interaction.customId}"`);
 
-            // 2.1 ระบบแจกยศเดิมของคุณ (role_toggle_)
+            // 2.1 ระบบแจกยศเดิม (role_toggle_)
             if (interaction.customId.startsWith('role_toggle_')) {
                 await interaction.deferReply({ ephemeral: true });
-
                 const roleId = interaction.customId.split('_')[2];
                 const member = interaction.member;
                 const role = interaction.guild.roles.cache.get(roleId);
@@ -58,29 +49,32 @@ module.exports = {
                 return;
             }
 
-            // 2.2 รองรับปุ่มลงทะเบียน (เปลี่ยน 'register_button' เป็น Custom ID จริงของปุ่มคุณ ถ้าไม่ใช่ชื่อนี้)
-            if (interaction.customId === 'register_button' || interaction.customId.includes('register')) {
-                // ตัวอย่าง: เด้ง Modal ขึ้นมาให้กรอก Steam ID
-                const modal = new ModalBuilder()
-                    .setCustomId('register_modal')
-                    .setTitle('ลงทะเบียน / ตั้งชื่อและรับยศ');
+            // 2.2 รองรับปุ่มลงทะเบียน modal_role_trigger ของคุณ
+            if (interaction.customId === 'modal_role_trigger') {
+                try {
+                    const modal = new ModalBuilder()
+                        .setCustomId('register_modal')
+                        .setTitle('ลงทะเบียน / ตั้งชื่อและรับยศ');
 
-                const steamInput = new TextInputBuilder()
-                    .setCustomId('steam_id_input')
-                    .setLabel('กรอก Steam ID64 (17 หลัก)')
-                    .setPlaceholder('ตัวอย่าง: 7656119XXXXXXXXXX')
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
+                    const steamInput = new TextInputBuilder()
+                        .setCustomId('steam_id_input')
+                        .setLabel('กรอก Steam ID64 (17 หลัก)')
+                        .setPlaceholder('ตัวอย่าง: 7656119XXXXXXXXXX')
+                        .setStyle(TextInputStyle.Short)
+                        .setRequired(true);
 
-                const firstRow = new ActionRowBuilder().addComponents(steamInput);
-                modal.addComponents(firstRow);
+                    const row = new ActionRowBuilder().addComponents(steamInput);
+                    modal.addComponents(row);
 
-                await interaction.showModal(modal);
+                    await interaction.showModal(modal);
+                } catch (error) {
+                    console.error('❌ Error showing modal:', error);
+                }
                 return;
             }
         }
 
-        // 3. จัดการกรณีที่กดยืนยันใน Modal (ช่องกรอกข้อมูล)
+        // 3. จัดการตอนกดยืนยันข้อมูลใน Modal (ช่องกรอก Steam ID)
         if (interaction.isModalSubmit()) {
             if (interaction.customId === 'register_modal') {
                 const steamId = interaction.fields.getTextInputValue('steam_id_input');
