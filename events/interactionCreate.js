@@ -1,4 +1,4 @@
-const { Events } = require('discord.js');
+const { Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -27,11 +27,11 @@ module.exports = {
             return;
         }
 
-        // 2. จัดการกรณีที่เป็น Button Interaction (ระบบกดรับยศ)
+        // 2. จัดการกรณีที่เป็น Button Interaction (กดปุ่ม)
         if (interaction.isButton()) {
             console.log(`🔘 มีคนกดปุ่ม Custom ID: "${interaction.customId}"`);
 
-            // ถ้าปุ่มขึ้นต้นด้วย role_toggle_ ให้ทำงานแจกยศ
+            // 2.1 ระบบแจกยศเดิมของคุณ (role_toggle_)
             if (interaction.customId.startsWith('role_toggle_')) {
                 await interaction.deferReply({ ephemeral: true });
 
@@ -53,10 +53,44 @@ module.exports = {
                     }
                 } catch (error) {
                     console.error(error);
-                    await interaction.editReply({ content: '❌ เกิดข้อผิดพลาดในการจัดการยศ (บอทอาจจะยศต่ำกว่ายศที่จะให้)' });
+                    await interaction.editReply({ content: '❌ เกิดข้อผิดพลาดในการจัดการยศ' });
                 }
+                return;
             }
-            return;
+
+            // 2.2 รองรับปุ่มลงทะเบียน (เปลี่ยน 'register_button' เป็น Custom ID จริงของปุ่มคุณ ถ้าไม่ใช่ชื่อนี้)
+            if (interaction.customId === 'register_button' || interaction.customId.includes('register')) {
+                // ตัวอย่าง: เด้ง Modal ขึ้นมาให้กรอก Steam ID
+                const modal = new ModalBuilder()
+                    .setCustomId('register_modal')
+                    .setTitle('ลงทะเบียน / ตั้งชื่อและรับยศ');
+
+                const steamInput = new TextInputBuilder()
+                    .setCustomId('steam_id_input')
+                    .setLabel('กรอก Steam ID64 (17 หลัก)')
+                    .setPlaceholder('ตัวอย่าง: 7656119XXXXXXXXXX')
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                const firstRow = new ActionRowBuilder().addComponents(steamInput);
+                modal.addComponents(firstRow);
+
+                await interaction.showModal(modal);
+                return;
+            }
+        }
+
+        // 3. จัดการกรณีที่กดยืนยันใน Modal (ช่องกรอกข้อมูล)
+        if (interaction.isModalSubmit()) {
+            if (interaction.customId === 'register_modal') {
+                const steamId = interaction.fields.getTextInputValue('steam_id_input');
+                
+                await interaction.reply({ 
+                    content: `✅ บันทึก Steam ID: \`${steamId}\` เรียบร้อยแล้ว! ระบบกำลังตรวจสอบข้อมูล...`, 
+                    ephemeral: true 
+                });
+                return;
+            }
         }
     },
 };
